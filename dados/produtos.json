@@ -1,0 +1,177 @@
+[
+  {
+    "id": 1,
+    "nome": "Chuteira Adidas",
+    "categoria": "Chuteiras",
+    "marca": "Adidas",
+    "preco": 199.9,
+    "precoAntigo": 249.9,
+    "descricao": "Chuteira esportiva para futebol, com design moderno e confortável.",
+    "tamanhos": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 12,
+    "destaque": true,
+    "imagem": "imagens/produto-1.svg"
+  },
+  {
+    "id": 2,
+    "nome": "Chuteira Nike",
+    "categoria": "Chuteiras",
+    "marca": "Nike",
+    "preco": 229.9,
+    "precoAntigo": 279.9,
+    "descricao": "Modelo esportivo com acabamento moderno para treinos e partidas.",
+    "tamanhos": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43"
+    ],
+    "cores": [
+      "Preto",
+      "Branco"
+    ],
+    "estoque": 8,
+    "destaque": true,
+    "imagem": "imagens/produto-2.svg"
+  },
+  {
+    "id": 3,
+    "nome": "Chuteira Society Nike Botinha",
+    "categoria": "Chuteiras",
+    "marca": "Nike",
+    "preco": 259.9,
+    "precoAntigo": 299.9,
+    "descricao": "Modelo society com cano médio, desenvolvido para maior estabilidade.",
+    "tamanhos": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 5,
+    "destaque": true,
+    "imagem": "imagens/produto-3.svg"
+  },
+  {
+    "id": 4,
+    "nome": "Chuteira Society Nike CR7",
+    "categoria": "Chuteiras",
+    "marca": "Nike",
+    "preco": 289.9,
+    "precoAntigo": 339.9,
+    "descricao": "Modelo society inspirado na linha CR7, com visual marcante.",
+    "tamanhos": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "cores": [
+      "Preto",
+      "Dourado"
+    ],
+    "estoque": 3,
+    "destaque": true,
+    "imagem": "imagens/produto-4.svg"
+  },
+  {
+    "id": 5,
+    "nome": "Bola de Futebol Pro",
+    "categoria": "Bolas",
+    "marca": "Perowba",
+    "preco": 119.9,
+    "precoAntigo": 149.9,
+    "descricao": "Bola para futebol com acabamento resistente e ótimo controle.",
+    "tamanhos": [
+      "Único"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 15,
+    "destaque": false,
+    "imagem": "imagens/produto-5.svg"
+  },
+  {
+    "id": 6,
+    "nome": "Camisa Esportiva Pro",
+    "categoria": "Camisas",
+    "marca": "Perowba",
+    "preco": 89.9,
+    "precoAntigo": 109.9,
+    "descricao": "Camisa esportiva leve para treinos, partidas e atividades físicas.",
+    "tamanhos": [
+      "P",
+      "M",
+      "G",
+      "GG"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 20,
+    "destaque": false,
+    "imagem": "imagens/produto-6.svg"
+  },
+  {
+    "id": 7,
+    "nome": "Short Esportivo",
+    "categoria": "Roupas",
+    "marca": "Perowba",
+    "preco": 59.9,
+    "precoAntigo": 79.9,
+    "descricao": "Short leve e confortável para futebol, academia e corrida.",
+    "tamanhos": [
+      "P",
+      "M",
+      "G",
+      "GG"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 18,
+    "destaque": false,
+    "imagem": "imagens/produto-7.svg"
+  },
+  {
+    "id": 8,
+    "nome": "Meião Esportivo",
+    "categoria": "Acessórios",
+    "marca": "Perowba",
+    "preco": 24.9,
+    "precoAntigo": 34.9,
+    "descricao": "Meião esportivo confortável para futebol e treinos.",
+    "tamanhos": [
+      "Único"
+    ],
+    "cores": [
+      "Preto",
+      "Laranja"
+    ],
+    "estoque": 30,
+    "destaque": false,
+    "imagem": "imagens/produto-8.svg"
+  }
+]

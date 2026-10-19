@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Catálogo de material esportivo Perowba Sports.">
+<meta name="author" content="Perowba Sports">
+<meta name="theme-color" content="#ff6a00">
+<title>Contato | Perowba Sports</title>
+<link rel="icon" href="imagens/logo-perowba.jpg">
+<link rel="stylesheet" href="estilos/style.css">
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<header>
+  <div class="topbar"><div class="container"><span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span><span>📍 João Pessoa - PB</span></div></div>
+  <div class="header"><div class="container nav">
+    <a class="logo" href="index.html"><img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports"><span>PEROWBA SPORTS</span></a>
+    <button class="menu-btn" aria-label="Abrir menu">☰</button>
+    <nav class="nav-links">
+      <a href="index.html">Início</a><a href="catalogo.html">Catálogo</a><a href="contato.html">Contato</a>
+      <a class="cart-btn" href="carrinho.html">🛒 Carrinho <span class="cart-count" data-cart-count>0</span></a>
+    </nav>
+  </div></div>
+</header>
+
+<section class="page-head"><div class="container"><h1>Fale com a Perowba Sports</h1><p>Entre em contato para tirar dúvidas sobre produtos, disponibilidade e pedidos.</p></div></section>
+<main class="container"><div class="contact-grid">
+ <section class="contact-box">
+  <h2>Atendimento</h2>
+  <p>Estamos prontos para ajudar você a encontrar o produto certo.</p>
+  <div class="contact-list">
+   <div class="contact-item"><strong>📱 WhatsApp</strong><br><span>Atendimento comercial</span></div>
+   <div class="contact-item"><strong>📍 Localização</strong><br><span>João Pessoa - PB</span></div>
+   <div class="contact-item"><strong>📸 Instagram</strong><br><span>Perowba Sports</span></div>
+  </div>
+ </section>
+ <section class="contact-box">
+  <h2>Envie uma mensagem</h2>
+  <form class="contact-form" id="contact-form">
+   <div class="field"><label>Nome</label><input required id="nome" placeholder="Seu nome"></div>
+   <div class="field"><label>Telefone</label><input required id="telefone" placeholder="(83) 99999-9999"></div>
+   <div class="field"><label>Mensagem</label><textarea required id="mensagem" rows="6" placeholder="Como podemos ajudar?"></textarea></div>
+   <button class="btn btn-primary" type="submit">Enviar pelo WhatsApp</button>
+  </form>
+ </section>
+</div></main>
+
+<footer class="footer">
+ <div class="container">
+  <div class="footer-grid">
+   <div><h3>PEROWBA SPORTS</h3><p>Material esportivo para quem leva o jogo a sério.</p></div>
+   <div><h3>Atalhos</h3><a href="catalogo.html">Catálogo</a><a href="carrinho.html">Meu carrinho</a><a href="contato.html">Contato</a></div>
+   <div><h3>Atendimento</h3><p>WhatsApp comercial</p><p>João Pessoa - PB</p></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Perowba Sports</span><span>Catálogo com pedido pelo WhatsApp</span></div>
+ </div>
+</footer>
+<a class="whatsapp-float" id="whatsapp-float" aria-label="WhatsApp" href="#">✆</a>
+<script src="scripts/config.js"></script>
+<script src="scripts/app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{const a=document.getElementById("whatsapp-float"); if(a)a.href=whatsappUrl("Olá! Gostaria de conhecer o catálogo da Perowba Sports.");});
+</script>
+
+<script>
+document.getElementById("contact-form").addEventListener("submit",e=>{
+ e.preventDefault();
+ const msg=`Olá! Meu nome é ${document.getElementById("nome").value}.\nTelefone: ${document.getElementById("telefone").value}\n\n${document.getElementById("mensagem").value}`;
+ location.href=whatsappUrl(msg);
+});
+</script>
+</body></html>

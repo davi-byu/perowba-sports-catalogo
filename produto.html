@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Catálogo de material esportivo Perowba Sports.">
+<meta name="author" content="Perowba Sports">
+<meta name="theme-color" content="#ff6a00">
+<title>Produto | Perowba Sports</title>
+<link rel="icon" href="imagens/logo-perowba.jpg">
+<link rel="stylesheet" href="estilos/style.css">
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<header>
+  <div class="topbar"><div class="container"><span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span><span>📍 João Pessoa - PB</span></div></div>
+  <div class="header"><div class="container nav">
+    <a class="logo" href="index.html"><img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports"><span>PEROWBA SPORTS</span></a>
+    <button class="menu-btn" aria-label="Abrir menu">☰</button>
+    <nav class="nav-links">
+      <a href="index.html">Início</a><a href="catalogo.html">Catálogo</a><a href="contato.html">Contato</a>
+      <a class="cart-btn" href="carrinho.html">🛒 Carrinho <span class="cart-count" data-cart-count>0</span></a>
+    </nav>
+  </div></div>
+</header>
+
+<main class="container"><div id="product-root"><div class="empty">Carregando produto...</div></div></main>
+
+<footer class="footer">
+ <div class="container">
+  <div class="footer-grid">
+   <div><h3>PEROWBA SPORTS</h3><p>Material esportivo para quem leva o jogo a sério.</p></div>
+   <div><h3>Atalhos</h3><a href="catalogo.html">Catálogo</a><a href="carrinho.html">Meu carrinho</a><a href="contato.html">Contato</a></div>
+   <div><h3>Atendimento</h3><p>WhatsApp comercial</p><p>João Pessoa - PB</p></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Perowba Sports</span><span>Catálogo com pedido pelo WhatsApp</span></div>
+ </div>
+</footer>
+<a class="whatsapp-float" id="whatsapp-float" aria-label="WhatsApp" href="#">✆</a>
+<script src="scripts/config.js"></script>
+<script src="scripts/app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{const a=document.getElementById("whatsapp-float"); if(a)a.href=whatsappUrl("Olá! Gostaria de conhecer o catálogo da Perowba Sports.");});
+</script>
+
+<script src="scripts/produto.js"></script>
+</body></html>
