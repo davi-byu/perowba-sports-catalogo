@@ -127,12 +127,6 @@
   <script src="scripts/app.js"></script>
   <script src="scripts/firebase-config.js"></script>
 
-  <script type="module">
-    import { db } from "./scripts/firebase-service.js";
-
-    console.log("Firebase conectado:", !!db);
-  </script>
-
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const linkWhatsApp = document.getElementById("whatsapp-float");
@@ -150,20 +144,20 @@
         const campoCategoria = document.getElementById("categoria");
 
         setTimeout(() => {
-          if (
-            [...campoCategoria.options].some(
-              option => option.value === categoriaSolicitada
-            )
-          ) {
+          const categoriaExiste = [...campoCategoria.options].some(
+            option => option.value === categoriaSolicitada
+          );
+
+          if (categoriaExiste) {
             campoCategoria.value = categoriaSolicitada;
             campoCategoria.dispatchEvent(new Event("change"));
           }
-        }, 300);
+        }, 500);
       }
     });
   </script>
 
-  <script src="scripts/catalogo.js"></script>
+  <script type="module" src="scripts/catalogo.js"></script>
 </body>
 
 </html>
