@@ -1,3 +1,12 @@
+import {
+  listarProdutos,
+  salvarProduto,
+  excluirProduto,
+  entrarAdmin,
+  sairAdmin
+} from "./firebase-service.js";
+
+const EMPRESA_ID = "perowba-sports";
 
 let products = [];
 
