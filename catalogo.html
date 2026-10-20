@@ -1,61 +1,169 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Catálogo de material esportivo Perowba Sports.">
-<meta name="author" content="Perowba Sports">
-<meta name="theme-color" content="#ff6a00">
-<title>Catálogo | Perowba Sports</title>
-<link rel="icon" href="imagens/logo-perowba.jpg">
-<link rel="stylesheet" href="estilos/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Catálogo de material esportivo Perowba Sports.">
+  <meta name="author" content="Perowba Sports">
+  <meta name="theme-color" content="#ff6a00">
+  <title>Catálogo | Perowba Sports</title>
+  <link rel="icon" href="imagens/logo-perowba.jpg">
+  <link rel="stylesheet" href="estilos/style.css">
 </head>
+
 <body>
-<div id="toast" class="toast"></div>
-<header>
-  <div class="topbar"><div class="container"><span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span><span>📍 João Pessoa - PB</span></div></div>
-  <div class="header"><div class="container nav">
-    <a class="logo" href="index.html"><img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports"><span>PEROWBA SPORTS</span></a>
-    <button class="menu-btn" aria-label="Abrir menu">☰</button>
-    <nav class="nav-links">
-      <a href="index.html">Início</a><a href="catalogo.html">Catálogo</a><a href="contato.html">Contato</a>
-      <a class="cart-btn" href="carrinho.html">🛒 Carrinho <span class="cart-count" data-cart-count>0</span></a>
-    </nav>
-  </div></div>
-</header>
+  <div id="toast" class="toast"></div>
 
-<section class="page-head"><div class="container"><h1>Catálogo</h1><p>Encontre o material esportivo que você precisa.</p></div></section>
-<main class="container">
- <div class="filters">
-  <div class="field"><label for="search">Buscar produto</label><input id="search" placeholder="Ex.: chuteira Nike"></div>
-  <div class="field"><label for="categoria">Categoria</label><select id="categoria"><option value="">Todas</option></select></div>
-  <div class="field"><label for="marca">Marca</label><select id="marca"><option value="">Todas</option></select></div>
-  <div class="field"><label for="ordem">Ordenar</label><select id="ordem"><option value="destaques">Destaques</option><option value="menor">Menor preço</option><option value="maior">Maior preço</option><option value="nome">Nome</option></select></div>
- </div>
- <div class="toolbar"><strong id="result-count">0 produto(s)</strong><a href="carrinho.html" class="btn btn-primary">🛒 Ver carrinho</a></div>
- <div id="products-grid" class="products-grid"></div>
-</main>
+  <header>
+    <div class="topbar">
+      <div class="container">
+        <span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span>
+        <span>📍 João Pessoa - PB</span>
+      </div>
+    </div>
 
-<footer class="footer">
- <div class="container">
-  <div class="footer-grid">
-   <div><h3>PEROWBA SPORTS</h3><p>Material esportivo para quem leva o jogo a sério.</p></div>
-   <div><h3>Atalhos</h3><a href="catalogo.html">Catálogo</a><a href="carrinho.html">Meu carrinho</a><a href="contato.html">Contato</a></div>
-   <div><h3>Atendimento</h3><p>WhatsApp comercial</p><p>João Pessoa - PB</p></div>
-  </div>
-  <div class="footer-bottom"><span>© 2026 Perowba Sports</span><span>Catálogo com pedido pelo WhatsApp</span></div>
- </div>
-</footer>
-<a class="whatsapp-float" id="whatsapp-float" aria-label="WhatsApp" href="#">✆</a>
-<script src="scripts/config.js"></script>
-<script src="scripts/app.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded",()=>{const a=document.getElementById("whatsapp-float"); if(a)a.href=whatsappUrl("Olá! Gostaria de conhecer o catálogo da Perowba Sports.");});
-</script>
+    <div class="header">
+      <div class="container nav">
+        <a class="logo" href="index.html">
+          <img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports">
+          <span>PEROWBA SPORTS</span>
+        </a>
 
-<script src="scripts/catalogo.js"></script>
-<script>
-const q=new URLSearchParams(location.search).get("categoria");
-document.addEventListener("DOMContentLoaded",()=>{if(q){setTimeout(()=>{const s=document.getElementById("categoria");s.value=q;s.dispatchEvent(new Event("change"));},100);}});
-</script>
-</body></html>
+        <button class="menu-btn" aria-label="Abrir menu">☰</button>
+
+        <nav class="nav-links">
+          <a href="index.html">Início</a>
+          <a href="catalogo.html">Catálogo</a>
+          <a href="contato.html">Contato</a>
+          <a class="cart-btn" href="carrinho.html">
+            🛒 Carrinho
+            <span class="cart-count" data-cart-count>0</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="page-head">
+    <div class="container">
+      <h1>Catálogo</h1>
+      <p>Encontre o material esportivo que você precisa.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="filters">
+      <div class="field">
+        <label for="search">Buscar produto</label>
+        <input id="search" type="search" placeholder="Ex.: chuteira Nike">
+      </div>
+
+      <div class="field">
+        <label for="categoria">Categoria</label>
+        <select id="categoria">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="marca">Marca</label>
+        <select id="marca">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="ordem">Ordenar</label>
+        <select id="ordem">
+          <option value="destaques">Destaques</option>
+          <option value="menor">Menor preço</option>
+          <option value="maior">Maior preço</option>
+          <option value="nome">Nome</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <strong id="result-count">Carregando produtos...</strong>
+      <a href="carrinho.html" class="btn btn-primary">🛒 Ver carrinho</a>
+    </div>
+
+    <div id="products-grid" class="products-grid" aria-live="polite"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3>PEROWBA SPORTS</h3>
+          <p>Material esportivo para quem leva o jogo a sério.</p>
+        </div>
+
+        <div>
+          <h3>Atalhos</h3>
+          <a href="catalogo.html">Catálogo</a>
+          <a href="carrinho.html">Meu carrinho</a>
+          <a href="contato.html">Contato</a>
+        </div>
+
+        <div>
+          <h3>Atendimento</h3>
+          <p>WhatsApp comercial</p>
+          <p>João Pessoa - PB</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 Perowba Sports</span>
+        <span>Catálogo com pedido pelo WhatsApp</span>
+      </div>
+    </div>
+  </footer>
+
+  <a class="whatsapp-float" id="whatsapp-float" aria-label="Falar com a Perowba Sports pelo WhatsApp" href="#">✆</a>
+
+  <script src="scripts/config.js"></script>
+  <script src="scripts/app.js"></script>
+  <script src="scripts/firebase-config.js"></script>
+
+  <script type="module">
+    import { db } from "./scripts/firebase-service.js";
+
+    console.log("Firebase conectado:", !!db);
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const linkWhatsApp = document.getElementById("whatsapp-float");
+
+      if (linkWhatsApp && typeof whatsappUrl === "function") {
+        linkWhatsApp.href = whatsappUrl(
+          "Olá! Gostaria de conhecer o catálogo da Perowba Sports."
+        );
+      }
+
+      const categoriaSolicitada =
+        new URLSearchParams(window.location.search).get("categoria");
+
+      if (categoriaSolicitada) {
+        const campoCategoria = document.getElementById("categoria");
+
+        setTimeout(() => {
+          if (
+            [...campoCategoria.options].some(
+              option => option.value === categoriaSolicitada
+            )
+          ) {
+            campoCategoria.value = categoriaSolicitada;
+            campoCategoria.dispatchEvent(new Event("change"));
+          }
+        }, 300);
+      }
+    });
+  </script>
+
+  <script src="scripts/catalogo.js"></script>
+</body>
+
+</html>
