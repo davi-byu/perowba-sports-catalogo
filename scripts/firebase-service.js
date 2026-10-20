@@ -7,8 +7,8 @@ import {
   doc,
   getDocs,
   getDoc,
-  setDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -23,21 +23,35 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
+
 const firebaseConfig = window.FIREBASE_CONFIG;
 
 if (!firebaseConfig) {
-  throw new Error("Configuração do Firebase não encontrada.");
+  throw new Error(
+    "Configuração do Firebase não encontrada. Verifique scripts/firebase-config.js."
+  );
 }
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 function validarEmpresa(empresaId) {
   if (!empresaId || typeof empresaId !== "string") {
-    throw new Error("Informe um identificador válido para a empresa.");
+    throw new Error("Identificador da empresa inválido.");
   }
+
   return empresaId;
 }
 
@@ -46,8 +60,12 @@ function validarProduto(produto) {
     throw new Error("Dados do produto inválidos.");
   }
 
-  if (!produto.nome || !Number.isFinite(Number(produto.preco))) {
-    throw new Error("Informe o nome e o preço válido do produto.");
+  if (!String(produto.nome || "").trim()) {
+    throw new Error("Informe o nome do produto.");
+  }
+
+  if (!Number.isFinite(Number(produto.preco)) || Number(produto.preco) < 0) {
+    throw new Error("Informe um preço válido.");
   }
 }
 
@@ -71,6 +89,7 @@ function pedidosRef(empresaId) {
 
 export async function listarProdutos(empresaId) {
   const snapshot = await getDocs(produtosRef(empresaId));
+
   return snapshot.docs.map(item => ({
     id: item.id,
     ...item.data()
@@ -81,25 +100,40 @@ export async function buscarProduto(empresaId, produtoId) {
   const referencia = doc(produtosRef(empresaId), produtoId);
   const snapshot = await getDoc(referencia);
 
-  if (!snapshot.exists()) return null;
+  if (!snapshot.exists()) {
+    return null;
+  }
 
-  return { id: snapshot.id, ...snapshot.data() };
+  return {
+    id: snapshot.id,
+    ...snapshot.data()
+  };
 }
 
-export async function salvarProduto(empresaId, produto, produtoId = null) {
+export async function salvarProduto(
+  empresaId,
+  produto,
+  produtoId = null
+) {
   validarProduto(produto);
 
   const dados = {
     ...produto,
     nome: String(produto.nome).trim(),
     preco: Number(produto.preco),
+    ativo: produto.ativo !== false,
     atualizadoEm: serverTimestamp()
   };
 
+  delete dados.id;
+
   if (produtoId) {
-    await setDoc(doc(produtosRef(empresaId), produtoId), dados, {
-      merge: true
-    });
+    await setDoc(
+      doc(produtosRef(empresaId), produtoId),
+      dados,
+      { merge: true }
+    );
+
     return produtoId;
   }
 
@@ -115,6 +149,53 @@ export async function excluirProduto(empresaId, produtoId) {
   await deleteDoc(doc(produtosRef(empresaId), produtoId));
 }
 
+export async function enviarImagemProduto(
+  arquivo,
+  empresaId = "perowba-sports"
+) {
+  if (!(arquivo instanceof File)) {
+    throw new Error("Arquivo de imagem inválido.");
+  }
+
+  if (!arquivo.type.startsWith("image/")) {
+    throw new Error("Selecione um arquivo de imagem.");
+  }
+
+  if (arquivo.size >= 5 * 1024 * 1024) {
+    throw new Error("Cada imagem deve ter menos de 5 MB.");
+  }
+
+  const nomeSeguro = arquivo.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "-");
+
+  const caminho =
+    `produtos/${validarEmpresa(empresaId)}/` +
+    `${Date.now()}-${crypto.randomUUID()}-${nomeSeguro}`;
+
+  const referencia = ref(storage, caminho);
+
+  await uploadBytes(referencia, arquivo, {
+    contentType: arquivo.type
+  });
+
+  const url = await getDownloadURL(referencia);
+
+  return {
+    url,
+    caminho
+  };
+}
+
+export async function excluirImagemProduto(caminho) {
+  if (!caminho || typeof caminho !== "string") {
+    return;
+  }
+
+  await deleteObject(ref(storage, caminho));
+}
+
 export async function atualizarEstoque(
   empresaId,
   produtoId,
@@ -123,13 +204,18 @@ export async function atualizarEstoque(
   const quantidade = Number(novoEstoque);
 
   if (!Number.isFinite(quantidade) || quantidade < 0) {
-    throw new Error("O estoque deve ser um número igual ou maior que zero.");
+    throw new Error(
+      "O estoque deve ser igual ou maior que zero."
+    );
   }
 
-  await updateDoc(doc(produtosRef(empresaId), produtoId), {
-    estoque: quantidade,
-    atualizadoEm: serverTimestamp()
-  });
+  await updateDoc(
+    doc(produtosRef(empresaId), produtoId),
+    {
+      estoque: quantidade,
+      atualizadoEm: serverTimestamp()
+    }
+  );
 }
 
 export async function listarPedidos(empresaId) {
@@ -147,7 +233,11 @@ export async function listarPedidos(empresaId) {
 }
 
 export async function registrarPedido(empresaId, pedido) {
-  if (!pedido || !Array.isArray(pedido.itens) || pedido.itens.length === 0) {
+  if (
+    !pedido ||
+    !Array.isArray(pedido.itens) ||
+    pedido.itens.length === 0
+  ) {
     throw new Error("O pedido precisa ter pelo menos um item.");
   }
 
@@ -159,7 +249,12 @@ export async function registrarPedido(empresaId, pedido) {
 }
 
 export async function entrarAdmin(email, senha) {
-  const resultado = await signInWithEmailAndPassword(auth, email, senha);
+  const resultado = await signInWithEmailAndPassword(
+    auth,
+    email,
+    senha
+  );
+
   return resultado.user;
 }
 

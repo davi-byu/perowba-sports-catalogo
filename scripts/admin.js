@@ -1,72 +1,153 @@
+
 import {
   listarProdutos,
   salvarProduto,
   excluirProduto,
+  enviarImagemProduto,
+  excluirImagemProduto,
   entrarAdmin,
-  sairAdmin
+  sairAdmin,
+  observarAutenticacao
 } from "./firebase-service.js";
 
 const EMPRESA_ID = "perowba-sports";
+const ADMIN_UID = "bSJntb0JQhSTFluXm46sI9SMrhT2";
+const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024;
 
-let products = [];
+let produtos = [];
+let fotosSelecionadas = [];
+let produtoEmEdicao = null;
+let salvando = false;
+let usuarioAutenticado = null;
+let observadorIniciado = false;
 
-const STORAGE = "perowba_admin_products";
-let selectedPhotos = [];
-let temporaryPhotoUrls = [];
+const $ = id => document.getElementById(id);
 
-async function loadAdmin() {
-  try {
-    const saved = localStorage.getItem(STORAGE);
-    products = saved ? JSON.parse(saved) : await loadProducts();
+function mostrarMensagem(mensagem) {
+  const elemento = $("toast");
 
-    renderAdmin();
-
-    if (!document.querySelector(".variation-row")) {
-      addVariation();
-    }
-  } catch (error) {
-    console.error(error);
-    toast("Não foi possível carregar os produtos.");
+  if (!elemento) {
+    alert(mensagem);
+    return;
   }
+
+  elemento.textContent = mensagem;
+  elemento.classList.add("show");
+
+  clearTimeout(mostrarMensagem.timer);
+
+  mostrarMensagem.timer = setTimeout(() => {
+    elemento.classList.remove("show");
+  }, 3500);
 }
 
-function saveAdmin() {
-  try {
-    localStorage.setItem(STORAGE, JSON.stringify(products));
-    renderAdmin();
-    return true;
-  } catch (error) {
-    console.error(error);
-    toast("Armazenamento cheio. Reduza o tamanho das fotos.");
-    return false;
-  }
+function escaparHTML(valor) {
+  return String(valor ?? "").replace(/[&<>"']/g, caractere => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[caractere]);
 }
 
-function getStock(product) {
-  if (Array.isArray(product.variacoes) && product.variacoes.length) {
-    return product.variacoes.reduce(
-      (total, variation) => total + Number(variation.estoque || 0),
+function formatarPreco(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+function obterEstoque(produto) {
+  if (Array.isArray(produto.variacoes)) {
+    return produto.variacoes.reduce(
+      (total, variacao) => total + Number(variacao.estoque || 0),
       0
     );
   }
 
-  return Number(product.estoque || 0);
+  return Number(produto.estoque || 0);
 }
 
-function renderAdmin() {
-  const table = document.getElementById("admin-table");
+function mostrarLogin() {
+  document.body.classList.add("login-page");
 
-  table.innerHTML = products.map((p, i) => `
+  $("login-admin").hidden = false;
+  $("conteudo-admin").hidden = true;
+  $("painel-admin").hidden = true;
+}
+
+function mostrarPainel() {
+  document.body.classList.remove("login-page");
+
+  $("login-admin").hidden = true;
+  $("conteudo-admin").hidden = false;
+  $("painel-admin").hidden = false;
+}
+
+function mostrarErroLogin(mensagem) {
+  $("login-erro").textContent = mensagem;
+}
+
+async function carregarProdutos() {
+  const tabela = $("admin-table");
+
+  tabela.innerHTML = `
     <tr>
-      <td>${escapeHTML(p.nome)}</td>
-      <td>${escapeHTML(p.categoria)}</td>
-      <td>${money(p.preco)}</td>
-      <td>${getStock(p)}</td>
+      <td colspan="5">Carregando produtos...</td>
+    </tr>
+  `;
+
+  try {
+    produtos = await listarProdutos(EMPRESA_ID);
+    renderizarProdutos();
+  } catch (erro) {
+    console.error("Erro ao carregar produtos:", erro);
+
+    tabela.innerHTML = `
+      <tr>
+        <td colspan="5">
+          Não foi possível carregar os produtos.
+        </td>
+      </tr>
+    `;
+
+    mostrarMensagem("Erro ao carregar os produtos do Firebase.");
+  }
+}
+
+function renderizarProdutos() {
+  const tabela = $("admin-table");
+
+  if (!produtos.length) {
+    tabela.innerHTML = `
+      <tr>
+        <td colspan="5">Nenhum produto cadastrado.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tabela.innerHTML = produtos.map(produto => `
+    <tr>
+      <td>${escaparHTML(produto.nome)}</td>
+      <td>${escaparHTML(produto.categoria)}</td>
+      <td>${formatarPreco(produto.preco)}</td>
+      <td>${obterEstoque(produto)}</td>
       <td>
-        <button type="button" class="icon-btn" onclick="editProduct(${i})">
+        <button
+          type="button"
+          class="btn"
+          data-action="edit"
+          data-id="${escaparHTML(produto.id)}">
           Editar
         </button>
-        <button type="button" class="icon-btn" onclick="deleteProduct(${i})">
+
+        <button
+          type="button"
+          class="btn"
+          data-action="delete"
+          data-id="${escaparHTML(produto.id)}">
           Excluir
         </button>
       </td>
@@ -74,84 +155,105 @@ function renderAdmin() {
   `).join("");
 }
 
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
+function adicionarVariacao(dados = {}) {
+  const lista = $("variations-list");
+  const linha = document.createElement("div");
 
-function addVariation(data = {}) {
-  const list = document.getElementById("variations-list");
-  const row = document.createElement("div");
+  linha.className = "variation-row";
+  linha.style.cssText = [
+    "display:grid",
+    "grid-template-columns:repeat(auto-fit,minmax(110px,1fr))",
+    "gap:10px",
+    "margin:12px 0",
+    "padding:12px",
+    "border:1px solid #ddd",
+    "border-radius:8px"
+  ].join(";");
 
-  row.className = "variation-row";
-  row.style.cssText =
-    "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:12px 0;padding:12px;border:1px solid #ddd;border-radius:8px;";
-
-  row.innerHTML = `
+  linha.innerHTML = `
     <div class="field">
       <label>Tamanho</label>
-      <input class="v-tamanho" placeholder="Ex.: 40 ou Único"
-        value="${escapeHTML(data.tamanho || "")}" required>
-    </div>
-    <div class="field">
-      <label>Cor</label>
-      <input class="v-cor" placeholder="Ex.: Preto"
-        value="${escapeHTML(data.cor || "")}" required>
-    </div>
-    <div class="field">
-      <label>Preço (R$)</label>
-      <input class="v-preco" type="number" min="0" step="0.01"
-        value="${data.preco ?? document.getElementById("p-preco").value ?? ""}"
+      <input
+        class="v-tamanho"
+        value="${escaparHTML(dados.tamanho || "")}"
+        placeholder="Ex.: 40"
         required>
     </div>
+
+    <div class="field">
+      <label>Cor</label>
+      <input
+        class="v-cor"
+        value="${escaparHTML(dados.cor || "")}"
+        placeholder="Ex.: Preto"
+        required>
+    </div>
+
+    <div class="field">
+      <label>Preço (R$)</label>
+      <input
+        class="v-preco"
+        type="number"
+        min="0"
+        step="0.01"
+        value="${dados.preco ?? $("p-preco").value ?? ""}"
+        required>
+    </div>
+
     <div class="field">
       <label>Estoque</label>
-      <input class="v-estoque" type="number" min="0" step="1"
-        value="${data.estoque ?? 0}" required>
+      <input
+        class="v-estoque"
+        type="number"
+        min="0"
+        step="1"
+        value="${Number(dados.estoque ?? 0)}"
+        required>
     </div>
+
     <button type="button" class="btn remove-variation">
       Remover
     </button>
   `;
 
-  row.querySelector(".remove-variation").addEventListener("click", () => {
-    row.remove();
+  linha.querySelector(".remove-variation").addEventListener("click", () => {
+    linha.remove();
   });
 
-  list.appendChild(row);
+  lista.appendChild(linha);
 }
 
-function getVariations() {
-  return [...document.querySelectorAll(".variation-row")].map(row => ({
-    tamanho: row.querySelector(".v-tamanho").value.trim(),
-    cor: row.querySelector(".v-cor").value.trim(),
-    preco: Number(row.querySelector(".v-preco").value),
-    estoque: Number(row.querySelector(".v-estoque").value)
+function lerVariacoes() {
+  return [...document.querySelectorAll(".variation-row")].map(linha => ({
+    tamanho: linha.querySelector(".v-tamanho").value.trim(),
+    cor: linha.querySelector(".v-cor").value.trim(),
+    preco: Number(linha.querySelector(".v-preco").value),
+    estoque: Number(linha.querySelector(".v-estoque").value)
   }));
 }
 
-function renderPhotoPreview() {
-  const preview = document.getElementById("photo-preview");
+function liberarFotosTemporarias() {
+  fotosSelecionadas.forEach(foto => {
+    if (foto.file && foto.src?.startsWith("blob:")) {
+      URL.revokeObjectURL(foto.src);
+    }
+  });
+}
 
-  temporaryPhotoUrls.forEach(url => URL.revokeObjectURL(url));
-  temporaryPhotoUrls = [];
+function renderizarFotos() {
+  const area = $("photo-preview");
+  area.replaceChildren();
 
-  preview.innerHTML = "";
+  fotosSelecionadas.forEach((foto, indice) => {
+    const cartao = document.createElement("div");
 
-  selectedPhotos.forEach((photo, index) => {
-    const card = document.createElement("div");
-    card.style.cssText =
+    cartao.style.cssText =
       "display:inline-flex;flex-direction:column;gap:6px;width:120px;margin:8px;vertical-align:top;";
 
-    const img = document.createElement("img");
-    img.src = photo.src;
-    img.alt = photo.name || `Foto ${index + 1}`;
-    img.style.cssText =
+    const imagem = document.createElement("img");
+    imagem.src = foto.src;
+    imagem.alt = foto.name || `Foto ${indice + 1}`;
+    imagem.style.cssText =
       "width:120px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:6px;";
 
     const label = document.createElement("label");
@@ -160,223 +262,480 @@ function renderPhotoPreview() {
     const radio = document.createElement("input");
     radio.type = "radio";
     radio.name = "foto-principal";
-    radio.checked = index === getMainPhotoIndex();
+    radio.checked = Boolean(foto.principal);
 
     radio.addEventListener("change", () => {
-      selectedPhotos.forEach(photoItem => {
-        photoItem.principal = false;
+      fotosSelecionadas.forEach(item => {
+        item.principal = false;
       });
 
-      photo.principal = true;
-      renderPhotoPreview();
+      foto.principal = true;
+      renderizarFotos();
     });
 
     label.append(radio, document.createTextNode(" Imagem principal"));
 
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "btn";
-    remove.textContent = "Remover foto";
+    const remover = document.createElement("button");
+    remover.type = "button";
+    remover.className = "btn";
+    remover.textContent = "Remover foto";
 
-    remove.addEventListener("click", () => {
-      selectedPhotos.splice(index, 1);
-
-      if (selectedPhotos.length && !selectedPhotos.some(p => p.principal)) {
-        selectedPhotos[0].principal = true;
+    remover.addEventListener("click", () => {
+      if (foto.file && foto.src?.startsWith("blob:")) {
+        URL.revokeObjectURL(foto.src);
       }
 
-      renderPhotoPreview();
+      fotosSelecionadas.splice(indice, 1);
+
+      if (
+        fotosSelecionadas.length &&
+        !fotosSelecionadas.some(item => item.principal)
+      ) {
+        fotosSelecionadas[0].principal = true;
+      }
+
+      renderizarFotos();
     });
 
-    card.append(img, label, remove);
-    preview.appendChild(card);
+    cartao.append(imagem, label, remover);
+    area.appendChild(cartao);
   });
 }
 
-function getMainPhotoIndex() {
-  const index = selectedPhotos.findIndex(photo => photo.principal);
-  return index < 0 ? 0 : index;
-}
+function selecionarFotos(evento) {
+  const arquivos = [...evento.target.files];
+  const validos = arquivos.filter(arquivo =>
+    arquivo.type.startsWith("image/") &&
+    arquivo.size > 0 &&
+    arquivo.size <= TAMANHO_MAXIMO_IMAGEM
+  );
 
-async function readPhoto(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  if (validos.length !== arquivos.length) {
+    mostrarMensagem("Cada imagem deve ser válida e ter até 5 MB.");
+  }
 
-    reader.onload = () => resolve({
-      src: reader.result,
-      name: file.name,
-      principal: false
+  validos.forEach(arquivo => {
+    fotosSelecionadas.push({
+      src: URL.createObjectURL(arquivo),
+      name: arquivo.name,
+      file: arquivo,
+      url: null,
+      caminho: null,
+      principal: fotosSelecionadas.length === 0
     });
-
-    reader.onerror = () => reject(new Error("Falha ao ler uma foto."));
-    reader.readAsDataURL(file);
   });
+
+  renderizarFotos();
+  evento.target.value = "";
 }
 
-async function handlePhotoSelection(event) {
-  const files = [...event.target.files];
+function obterFotosSalvas(produto) {
+  const imagens = Array.isArray(produto.imagens)
+    ? produto.imagens
+    : [];
 
-  if (!files.length) return;
+  if (imagens.length) {
+    return imagens.map((imagem, indice) => {
+      if (typeof imagem === "string") {
+        return {
+          src: imagem,
+          url: imagem,
+          caminho: null,
+          name: "",
+          principal: indice === 0,
+          file: null
+        };
+      }
 
-  const validFiles = files.filter(file => file.type.startsWith("image/"));
-
-  if (validFiles.length !== files.length) {
-    toast("Selecione somente arquivos de imagem.");
+      return {
+        src: imagem.url || imagem.src || "",
+        url: imagem.url || imagem.src || "",
+        caminho: imagem.caminho || null,
+        name: imagem.name || "",
+        principal: Boolean(imagem.principal),
+        file: null
+      };
+    });
   }
 
-  try {
-    const photos = await Promise.all(validFiles.map(readPhoto));
-
-    selectedPhotos.push(...photos);
-
-    if (selectedPhotos.length && !selectedPhotos.some(p => p.principal)) {
-      selectedPhotos[0].principal = true;
-    }
-
-    renderPhotoPreview();
-  } catch (error) {
-    console.error(error);
-    toast("Não foi possível carregar uma das fotos.");
+  if (produto.imagem) {
+    return [{
+      src: produto.imagem,
+      url: produto.imagem,
+      caminho: produto.imagemCaminho || null,
+      name: "",
+      principal: true,
+      file: null
+    }];
   }
 
-  event.target.value = "";
+  return [];
 }
 
-function editProduct(index) {
-  const p = products[index];
+function editarProduto(id) {
+  const produto = produtos.find(item => item.id === id);
 
-  if (!p) return;
-
-  document.getElementById("edit-index").value = index;
-  document.getElementById("p-nome").value = p.nome || "";
-  document.getElementById("p-categoria").value = p.categoria || "";
-  document.getElementById("p-marca").value = p.marca || "";
-  document.getElementById("p-condicao").value = p.condicao || "novo";
-  document.getElementById("p-descricao").value = p.descricao || "";
-  document.getElementById("p-preco").value = p.preco ?? "";
-  document.getElementById("p-destaque").checked = Boolean(p.destaque);
-
-  selectedPhotos = Array.isArray(p.imagens) && p.imagens.length
-    ? p.imagens.map(photo => typeof photo === "string"
-        ? { src: photo, name: "", principal: photo === p.imagem }
-        : { ...photo, principal: Boolean(photo.principal) })
-    : p.imagem
-      ? [{ src: p.imagem, name: "", principal: true }]
-      : [];
-
-  if (selectedPhotos.length && !selectedPhotos.some(photo => photo.principal)) {
-    selectedPhotos[0].principal = true;
+  if (!produto) {
+    mostrarMensagem("Produto não encontrado.");
+    return;
   }
 
-  renderPhotoPreview();
+  produtoEmEdicao = produto.id;
 
-  const list = document.getElementById("variations-list");
-  list.innerHTML = "";
+  $("edit-index").value = produto.id;
+  $("p-nome").value = produto.nome || "";
+  $("p-categoria").value = produto.categoria || "";
+  $("p-marca").value = produto.marca || "";
+  $("p-condicao").value = produto.condicao || "novo";
+  $("p-descricao").value = produto.descricao || "";
+  $("p-preco").value = produto.preco ?? "";
+  $("p-destaque").checked = Boolean(produto.destaque);
 
-  if (Array.isArray(p.variacoes) && p.variacoes.length) {
-    p.variacoes.forEach(variation => addVariation(variation));
+  liberarFotosTemporarias();
+  fotosSelecionadas = obterFotosSalvas(produto);
+
+  if (
+    fotosSelecionadas.length &&
+    !fotosSelecionadas.some(foto => foto.principal)
+  ) {
+    fotosSelecionadas[0].principal = true;
+  }
+
+  renderizarFotos();
+
+  $("variations-list").replaceChildren();
+
+  if (Array.isArray(produto.variacoes) && produto.variacoes.length) {
+    produto.variacoes.forEach(adicionarVariacao);
   } else {
-    const sizes = p.tamanhos || ["Único"];
-    const colors = p.cores || ["Preto"];
-
-    addVariation({
-      tamanho: sizes[0] || "Único",
-      cor: colors[0] || "Preto",
-      preco: p.preco,
-      estoque: p.estoque || 0
+    adicionarVariacao({
+      tamanho: produto.tamanhos?.[0] || "Único",
+      cor: produto.cores?.[0] || "Preto",
+      preco: produto.preco,
+      estoque: produto.estoque || 0
     });
   }
+
+  $("product-form").querySelector('[type="submit"]').textContent =
+    "Salvar alterações";
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function deleteProduct(index) {
-  if (confirm("Deseja realmente excluir este produto?")) {
-    products.splice(index, 1);
-    if (saveAdmin()) toast("Produto excluído.");
+function cancelarEdicao() {
+  $("product-form").reset();
+
+  produtoEmEdicao = null;
+  $("edit-index").value = "-1";
+
+  liberarFotosTemporarias();
+  fotosSelecionadas = [];
+  renderizarFotos();
+
+  $("variations-list").replaceChildren();
+  adicionarVariacao();
+
+  $("product-form").querySelector('[type="submit"]').textContent =
+    "Salvar produto";
+}
+
+async function prepararFotos() {
+  const imagens = [];
+
+  for (const foto of fotosSelecionadas) {
+    if (foto.file) {
+      const resultado = await enviarImagemProduto(
+        foto.file,
+        EMPRESA_ID
+      );
+
+      if (!resultado?.url) {
+        throw new Error("O Firebase não retornou a URL da imagem enviada.");
+      }
+
+      imagens.push({
+        url: resultado.url,
+        caminho: resultado.caminho || null,
+        name: foto.name,
+        principal: Boolean(foto.principal)
+      });
+
+      continue;
+    }
+
+    if (foto.url || foto.src) {
+      imagens.push({
+        url: foto.url || foto.src,
+        caminho: foto.caminho || null,
+        name: foto.name || "",
+        principal: Boolean(foto.principal)
+      });
+    }
+  }
+
+  if (imagens.length && !imagens.some(imagem => imagem.principal)) {
+    imagens[0].principal = true;
+  }
+
+  return imagens;
+}
+
+async function handleSubmit(evento) {
+  evento.preventDefault();
+
+  if (salvando) return;
+
+  if (!usuarioAutenticado || usuarioAutenticado.uid !== ADMIN_UID) {
+    mostrarMensagem("Entre com a conta administrativa para salvar produtos.");
+    mostrarLogin();
+    return;
+  }
+
+  const formulario = $("product-form");
+
+  if (!formulario.reportValidity()) return;
+
+  const variacoes = lerVariacoes();
+
+  if (!variacoes.length) {
+    mostrarMensagem("Adicione pelo menos uma variação.");
+    return;
+  }
+
+  const variacaoInvalida = variacoes.some(variacao =>
+    !variacao.tamanho ||
+    !variacao.cor ||
+    !Number.isFinite(variacao.preco) ||
+    variacao.preco < 0 ||
+    !Number.isInteger(variacao.estoque) ||
+    variacao.estoque < 0
+  );
+
+  if (variacaoInvalida) {
+    mostrarMensagem("Confira os tamanhos, cores, preços e estoques.");
+    return;
+  }
+
+  const precoBase = Number($("p-preco").value);
+
+  if (!Number.isFinite(precoBase) || precoBase < 0) {
+    mostrarMensagem("Informe um preço base válido.");
+    return;
+  }
+
+  salvando = true;
+
+  const botaoSalvar = formulario.querySelector('[type="submit"]');
+  const textoOriginal = botaoSalvar.textContent;
+
+  botaoSalvar.disabled = true;
+  botaoSalvar.textContent = "Salvando...";
+
+  try {
+    const imagens = await prepararFotos();
+    const imagemPrincipal =
+      imagens.find(imagem => imagem.principal) || imagens[0] || null;
+
+    const produto = {
+      nome: $("p-nome").value.trim(),
+      categoria: $("p-categoria").value.trim(),
+      marca: $("p-marca").value.trim(),
+      condicao: $("p-condicao").value,
+      descricao: $("p-descricao").value.trim(),
+      preco: precoBase,
+      variacoes,
+      tamanhos: [...new Set(variacoes.map(item => item.tamanho))],
+      cores: [...new Set(variacoes.map(item => item.cor))],
+      estoque: variacoes.reduce((total, item) => total + item.estoque, 0),
+      destaque: $("p-destaque").checked,
+      ativo: true,
+      imagem: imagemPrincipal?.url || "",
+      imagemCaminho: imagemPrincipal?.caminho || null,
+      imagens
+    };
+
+    if (produtoEmEdicao) {
+      await salvarProduto(EMPRESA_ID, produto, produtoEmEdicao);
+    } else {
+      await salvarProduto(EMPRESA_ID, produto);
+    }
+
+    cancelarEdicao();
+    await carregarProdutos();
+
+    mostrarMensagem("Produto salvo no Firebase com sucesso.");
+  } catch (erro) {
+    console.error("Erro ao salvar produto:", erro);
+
+    mostrarMensagem(
+      `Não foi possível salvar o produto: ${erro.message || "erro desconhecido."}`
+    );
+  } finally {
+    salvando = false;
+    botaoSalvar.disabled = false;
+    botaoSalvar.textContent = textoOriginal;
   }
 }
 
-function cancelEdit() {
-  document.getElementById("product-form").reset();
-  document.getElementById("edit-index").value = -1;
-  document.getElementById("variations-list").innerHTML = "";
-  selectedPhotos = [];
-  renderPhotoPreview();
-  addVariation();
+async function apagarProduto(id) {
+  const produto = produtos.find(item => item.id === id);
+
+  if (!produto) {
+    mostrarMensagem("Produto não encontrado.");
+    return;
+  }
+
+  if (!confirm(`Deseja realmente excluir "${produto.nome}"?`)) {
+    return;
+  }
+
+  if (!usuarioAutenticado || usuarioAutenticado.uid !== ADMIN_UID) {
+    mostrarMensagem("Você não tem autorização para excluir produtos.");
+    mostrarLogin();
+    return;
+  }
+
+  try {
+    await excluirProduto(EMPRESA_ID, id);
+
+    const imagens = Array.isArray(produto.imagens)
+      ? produto.imagens
+      : [];
+
+    const caminhos = new Set(
+      imagens
+        .filter(imagem => imagem && typeof imagem === "object")
+        .map(imagem => imagem.caminho)
+        .filter(Boolean)
+    );
+
+    if (produto.imagemCaminho) {
+      caminhos.add(produto.imagemCaminho);
+    }
+
+    for (const caminho of caminhos) {
+      try {
+        await excluirImagemProduto(caminho);
+      } catch (erro) {
+        console.warn("Não foi possível remover a imagem:", caminho, erro);
+      }
+    }
+
+    await carregarProdutos();
+    mostrarMensagem("Produto excluído do Firestore.");
+  } catch (erro) {
+    console.error("Erro ao excluir produto:", erro);
+    mostrarMensagem("Não foi possível excluir o produto.");
+  }
+}
+
+async function processarAcaoTabela(evento) {
+  const botao = evento.target.closest("button[data-action]");
+
+  if (!botao) return;
+
+  const { action, id } = botao.dataset;
+
+  if (action === "edit") {
+    editarProduto(id);
+  } else if (action === "delete") {
+    await apagarProduto(id);
+  }
+}
+
+async function processarLogin(evento) {
+  evento.preventDefault();
+
+  const botao = $("login-submit");
+  const textoOriginal = botao.textContent;
+
+  mostrarErroLogin("");
+
+  botao.disabled = true;
+  botao.textContent = "Entrando...";
+
+  try {
+    await entrarAdmin(
+      $("login-email").value.trim(),
+      $("login-senha").value
+    );
+  } catch (erro) {
+    console.error("Erro no login:", erro);
+
+    mostrarErroLogin(
+      "Não foi possível entrar. Confira seu e-mail e sua senha."
+    );
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
+}
+
+async function processarSaida() {
+  try {
+    await sairAdmin();
+  } catch (erro) {
+    console.error("Erro ao sair:", erro);
+    mostrarMensagem("Não foi possível encerrar a sessão.");
+  }
+}
+
+function acompanharAutenticacao() {
+  if (observadorIniciado) return;
+
+  observadorIniciado = true;
+
+  observarAutenticacao(async usuario => {
+    usuarioAutenticado = usuario || null;
+
+    if (!usuario) {
+      mostrarLogin();
+      mostrarErroLogin("");
+      return;
+    }
+
+    if (usuario.uid !== ADMIN_UID) {
+      mostrarLogin();
+
+      mostrarErroLogin(
+        "Esta conta não tem autorização para acessar o painel administrativo."
+      );
+
+      try {
+        await sairAdmin();
+      } catch (erro) {
+        console.error("Erro ao encerrar sessão não autorizada:", erro);
+      }
+
+      return;
+    }
+
+    mostrarPainel();
+    await carregarProdutos();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("product-form");
+  mostrarLogin();
 
-  document.getElementById("add-variation").addEventListener("click", () => {
-    addVariation();
+  $("login-form").addEventListener("submit", processarLogin);
+  $("logout-admin").addEventListener("click", processarSaida);
+
+  $("add-variation").addEventListener("click", () => {
+    adicionarVariacao();
   });
 
-  document.getElementById("p-fotos").addEventListener(
-    "change",
-    handlePhotoSelection
-  );
+  $("p-fotos").addEventListener("change", selecionarFotos);
+  $("cancel-edit").addEventListener("click", cancelarEdicao);
+  $("product-form").addEventListener("submit", handleSubmit);
 
-  document.getElementById("cancel-edit").addEventListener("click", cancelEdit);
+  $("admin-table").addEventListener("click", processarAcaoTabela);
 
-  form.addEventListener("submit", event => {
-    event.preventDefault();
-
-    const index = Number(document.getElementById("edit-index").value);
-    const variations = getVariations();
-
-    if (!variations.length) {
-      toast("Adicione pelo menos uma variação.");
-      return;
-    }
-
-    const oldProduct = index >= 0 ? products[index] : null;
-    const mainPhoto = selectedPhotos[getMainPhotoIndex()]?.src
-      || oldProduct?.imagem
-      || "imagens/produto-1.svg";
-
-    const product = {
-      id: oldProduct?.id ?? Date.now(),
-      nome: document.getElementById("p-nome").value.trim(),
-      categoria: document.getElementById("p-categoria").value.trim(),
-      marca: document.getElementById("p-marca").value.trim(),
-      condicao: document.getElementById("p-condicao").value,
-      descricao: document.getElementById("p-descricao").value.trim(),
-      preco: Number(document.getElementById("p-preco").value),
-      precoAntigo: oldProduct?.precoAntigo || 0,
-      variacoes: variations,
-      tamanhos: [...new Set(variations.map(v => v.tamanho))],
-      cores: [...new Set(variations.map(v => v.cor))],
-      estoque: variations.reduce((sum, v) => sum + v.estoque, 0),
-      destaque: document.getElementById("p-destaque").checked,
-      imagem: mainPhoto,
-      imagens: selectedPhotos,
-    };
-
-    if (index >= 0) {
-      products[index] = product;
-    } else {
-      products.push(product);
-    }
-
-    if (saveAdmin()) {
-      cancelEdit();
-      toast("Produto salvo com sucesso.");
-    }
+  $("reset-admin").addEventListener("click", () => {
+    mostrarMensagem(
+      "Os produtos de demonstração não são restaurados. Os produtos são gerenciados pelo Firebase."
+    );
   });
 
-  document.getElementById("reset-admin").addEventListener("click", async () => {
-    if (!confirm("Restaurar os produtos de demonstração? Isso substituirá os dados locais atuais.")) {
-      return;
-    }
-
-    localStorage.removeItem(STORAGE);
-    selectedPhotos = [];
-    cancelEdit();
-    await loadAdmin();
-    toast("Produtos de demonstração restaurados.");
-  });
-
-  loadAdmin();
+  acompanharAutenticacao();
 });

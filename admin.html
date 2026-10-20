@@ -1,123 +1,368 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Catálogo de material esportivo Perowba Sports.">
-<meta name="author" content="Perowba Sports">
-<meta name="theme-color" content="#ff6a00">
-<title>Painel | Perowba Sports</title>
-<link rel="icon" href="imagens/logo-perowba.jpg">
-<link rel="stylesheet" href="estilos/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Painel administrativo da Perowba Sports.">
+  <meta name="author" content="Perowba Sports">
+  <meta name="theme-color" content="#ff6a00">
+  <title>Painel administrativo | Perowba Sports</title>
+  <link rel="icon" href="imagens/logo-perowba.jpg">
+  <link rel="stylesheet" href="estilos/style.css">
+
+  <style>
+    #login-admin[hidden],
+    #conteudo-admin[hidden],
+    #painel-admin[hidden] {
+      display: none !important;
+    }
+
+    body.login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #f4f4f4;
+    }
+
+    #login-admin {
+      width: min(440px, calc(100% - 32px));
+      margin: 40px auto;
+      padding: 32px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .08);
+      box-sizing: border-box;
+    }
+
+    #login-admin h1 {
+      margin: 0 0 10px;
+      color: #171717;
+      font-size: 1.65rem;
+      text-align: center;
+    }
+
+    #login-admin .login-description {
+      margin-bottom: 24px;
+      color: #666;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    #login-form {
+      display: grid;
+      gap: 16px;
+    }
+
+    #login-form .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    #login-form label {
+      font-weight: 600;
+    }
+
+    #login-form input {
+      width: 100%;
+      min-height: 46px;
+      padding: 12px;
+      border: 1px solid #d5d5d5;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font: inherit;
+    }
+
+    #login-form input:focus {
+      outline: 2px solid #ff6a00;
+      outline-offset: 2px;
+    }
+
+    #login-submit {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 4px;
+      border: 0;
+      border-radius: 8px;
+      background: #ff6a00;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #login-submit:hover {
+      background: #e85f00;
+    }
+
+    #login-submit:disabled {
+      opacity: .7;
+      cursor: wait;
+    }
+
+    #login-erro {
+      margin: 0;
+      color: #b42318;
+      font-size: .9rem;
+    }
+
+    #conteudo-admin {
+      width: 100%;
+    }
+
+    #conteudo-admin>.page-head {
+      margin-bottom: 32px;
+    }
+
+    #painel-admin {
+      padding-bottom: 48px;
+    }
+
+    #painel-admin .notice {
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 480px) {
+      #login-admin {
+        padding: 24px 20px;
+      }
+
+      #login-admin h1 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
 </head>
-<body>
-<div id="toast" class="toast"></div>
-<header>
-  <div class="topbar"><div class="container"><span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span><span>📍 João Pessoa - PB</span></div></div>
-  <div class="header"><div class="container nav">
-    <a class="logo" href="index.html"><img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports"><span>PEROWBA SPORTS</span></a>
-    <button class="menu-btn" aria-label="Abrir menu">☰</button>
-    <nav class="nav-links">
-      <a href="index.html">Início</a><a href="catalogo.html">Catálogo</a><a href="contato.html">Contato</a>
-      <a class="cart-btn" href="carrinho.html">🛒 Carrinho <span class="cart-count" data-cart-count>0</span></a>
-    </nav>
-  </div></div>
-</header>
 
-<section class="page-head"><div class="container"><h1>Painel administrativo</h1><p>Base inicial para gerenciamento de produtos.</p></div></section>
-<main class="container"><div class="admin-grid">
- <section class="admin-box">
-  <div class="notice">Esta versão é um painel local de demonstração. Para produção, conecte o painel ao Firebase/Firestore e proteja o acesso com Firebase Authentication.</div>
-  <h2>Produto</h2>
-  <form id="product-form" class="contact-form">
-    <input type="hidden" id="edit-index" value="-1">
-  
-    <div class="field">
-      <label for="p-nome">Nome do produto</label>
-      <input id="p-nome" required placeholder="Ex.: Chuteira Nike Society">
-    </div>
-  
-    <div class="field">
-      <label for="p-categoria">Categoria</label>
-      <input id="p-categoria" required placeholder="Ex.: Chuteiras">
-    </div>
-  
-    <div class="field">
-      <label for="p-marca">Marca</label>
-      <input id="p-marca" required placeholder="Ex.: Nike">
-    </div>
-  
-    <div class="field">
-      <label for="p-condicao">Condição</label>
-      <select id="p-condicao" required>
-        <option value="novo">Novo</option>
-        <option value="usado">Usado</option>
-      </select>
-    </div>
-  
-    <div class="field">
-      <label for="p-descricao">Descrição</label>
-      <textarea id="p-descricao" rows="4" required
-        placeholder="Descreva o produto, estado de conservação e detalhes importantes"></textarea>
-    </div>
-  
-    <div class="field">
-      <label for="p-preco">Preço base (R$)</label>
-      <input id="p-preco" type="number" min="0" step="0.01" required placeholder="0,00">
-    </div>
-  
-    <div class="field">
-      <label for="p-fotos">Fotos do produto</label>
-      <input id="p-fotos" type="file" accept="image/*" multiple>
-      <small>Selecione várias fotos. Depois poderemos escolher a imagem principal.</small>
-      <div id="photo-preview" class="photo-preview"></div>
-    </div>
-  
-    <div class="field">
-      <label>Variações do produto</label>
-      <p>Cadastre cada combinação de tamanho e cor com seu próprio preço e estoque.</p>
-      <div id="variations-list"></div>
-      <button type="button" class="btn" id="add-variation">
-        + Adicionar variação
+<body class="login-page">
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="login-admin" class="admin-box">
+    <h1>Login administrativo</h1>
+    <p class="login-description">
+      Entre com sua conta administrativa para gerenciar os produtos.
+    </p>
+
+    <form id="login-form" class="contact-form">
+      <div class="field">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" autocomplete="username" required>
+      </div>
+
+      <div class="field">
+        <label for="login-senha">Senha</label>
+        <input id="login-senha" type="password" autocomplete="current-password" required>
+      </div>
+
+      <button id="login-submit" type="submit" class="btn btn-primary">
+        Entrar
       </button>
-    </div>
-  
-    <label>
-      <input type="checkbox" id="p-destaque">
-      Destacar este produto no catálogo
-    </label>
-  
-    <button type="submit" class="btn btn-primary">Salvar produto</button>
-    <button type="button" class="btn" id="cancel-edit">Cancelar edição</button>
-    <button type="button" class="btn" id="reset-admin">
-      Restaurar produtos de demonstração
-    </button>
-  </form>
 
- </section>
- <section class="admin-box">
-  <h2>Produtos cadastrados</h2>
-  <div style="overflow:auto"><table class="admin-table"><thead><tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead><tbody id="admin-table"></tbody></table></div>
- </section>
-</div></main>
+      <p id="login-erro" role="alert" aria-live="polite"></p>
+    </form>
+  </section>
 
-<footer class="footer">
- <div class="container">
-  <div class="footer-grid">
-   <div><h3>PEROWBA SPORTS</h3><p>Material esportivo para quem leva o jogo a sério.</p></div>
-   <div><h3>Atalhos</h3><a href="catalogo.html">Catálogo</a><a href="carrinho.html">Meu carrinho</a><a href="contato.html">Contato</a></div>
-   <div><h3>Atendimento</h3><p>WhatsApp comercial</p><p>João Pessoa - PB</p></div>
+  <div id="conteudo-admin" hidden>
+    <header>
+      <div class="topbar">
+        <div class="container">
+          <span>🔥 Ofertas esportivas e atendimento pelo WhatsApp</span>
+          <span>📍 João Pessoa - PB</span>
+        </div>
+      </div>
+
+      <div class="header">
+        <div class="container nav">
+          <a class="logo" href="index.html">
+            <img src="imagens/logo-perowba.jpg" alt="Logo Perowba Sports">
+            <span>PEROWBA SPORTS</span>
+          </a>
+
+          <button class="menu-btn" aria-label="Abrir menu">☰</button>
+
+          <nav class="nav-links">
+            <a href="index.html">Início</a>
+            <a href="catalogo.html">Catálogo</a>
+            <a href="contato.html">Contato</a>
+            <a class="cart-btn" href="carrinho.html">
+              🛒 Carrinho
+              <span class="cart-count" data-cart-count>0</span>
+            </a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-head">
+      <div class="container">
+        <h1>Painel administrativo</h1>
+        <p>Gerencie produtos, imagens, preços e estoque.</p>
+      </div>
+    </section>
+
+    <main id="painel-admin" class="container" hidden>
+      <div class="admin-grid">
+        <section class="admin-box">
+          <div class="notice">
+            Gerencie os produtos cadastrados no Firebase.
+          </div>
+
+          <h2>Produto</h2>
+
+          <form id="product-form" class="contact-form">
+            <input type="hidden" id="edit-index" value="-1">
+
+            <div class="field">
+              <label for="p-nome">Nome do produto</label>
+              <input id="p-nome" required placeholder="Ex.: Chuteira Nike Society">
+            </div>
+
+            <div class="field">
+              <label for="p-categoria">Categoria</label>
+              <input id="p-categoria" required placeholder="Ex.: Chuteiras">
+            </div>
+
+            <div class="field">
+              <label for="p-marca">Marca</label>
+              <input id="p-marca" required placeholder="Ex.: Nike">
+            </div>
+
+            <div class="field">
+              <label for="p-condicao">Condição</label>
+              <select id="p-condicao" required>
+                <option value="novo">Novo</option>
+                <option value="usado">Usado</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="p-descricao">Descrição</label>
+              <textarea id="p-descricao" rows="4" required placeholder="Descreva o produto e seus detalhes"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="p-preco">Preço base (R$)</label>
+              <input id="p-preco" type="number" min="0" step="0.01" required placeholder="0,00">
+            </div>
+
+            <div class="field">
+              <label for="p-fotos">Fotos do produto</label>
+              <input id="p-fotos" type="file" accept="image/*" multiple>
+              <small>
+                Selecione as fotos e escolha a imagem principal.
+              </small>
+              <div id="photo-preview" class="photo-preview"></div>
+            </div>
+
+            <div class="field">
+              <label>Variações do produto</label>
+              <p>Cadastre cada combinação de tamanho, cor, preço e estoque.</p>
+              <div id="variations-list"></div>
+
+              <button type="button" class="btn" id="add-variation">
+                + Adicionar variação
+              </button>
+            </div>
+
+            <label>
+              <input type="checkbox" id="p-destaque">
+              Destacar este produto no catálogo
+            </label>
+
+            <button type="submit" class="btn btn-primary">
+              Salvar produto
+            </button>
+
+            <button type="button" class="btn" id="cancel-edit">
+              Cancelar edição
+            </button>
+
+            <button type="button" class="btn" id="reset-admin">
+              Restaurar produtos de demonstração
+            </button>
+
+            <button type="button" class="btn" id="logout-admin">
+              Sair do painel
+            </button>
+          </form>
+        </section>
+
+        <section class="admin-box">
+          <h2>Produtos cadastrados</h2>
+
+          <div style="overflow:auto">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Preço</th>
+                  <th>Estoque</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="admin-table">
+                <tr>
+                  <td colspan="5">Carregando produtos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <h3>PEROWBA SPORTS</h3>
+            <p>Material esportivo para quem leva o jogo a sério.</p>
+          </div>
+
+          <div>
+            <h3>Atalhos</h3>
+            <a href="catalogo.html">Catálogo</a>
+            <a href="carrinho.html">Meu carrinho</a>
+            <a href="contato.html">Contato</a>
+          </div>
+
+          <div>
+            <h3>Atendimento</h3>
+            <p>WhatsApp comercial</p>
+            <p>João Pessoa - PB</p>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <span>© 2026 Perowba Sports</span>
+          <span>Catálogo com pedido pelo WhatsApp</span>
+        </div>
+      </div>
+    </footer>
+
+    <a class="whatsapp-float" id="whatsapp-float" aria-label="WhatsApp" href="#">✆</a>
   </div>
-  <div class="footer-bottom"><span>© 2026 Perowba Sports</span><span>Catálogo com pedido pelo WhatsApp</span></div>
- </div>
-</footer>
-<a class="whatsapp-float" id="whatsapp-float" aria-label="WhatsApp" href="#">✆</a>
-<script src="scripts/config.js"></script>
-<script src="scripts/app.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded",()=>{const a=document.getElementById("whatsapp-float"); if(a)a.href=whatsappUrl("Olá! Gostaria de conhecer o catálogo da Perowba Sports.");});
-</script>
 
-<script src="scripts/firebase-config.js"></script>
-<script type="module" src="scripts/admin.js"></script>
-</body></html>
+  <script src="scripts/config.js"></script>
+  <script src="scripts/app.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const link = document.getElementById("whatsapp-float");
+
+      if (link && typeof whatsappUrl === "function") {
+        link.href = whatsappUrl(
+          "Olá! Gostaria de conhecer o catálogo da Perowba Sports."
+        );
+      }
+    });
+  </script>
+
+  <script src="scripts/firebase-config.js"></script>
+  <script type="module" src="scripts/admin.js"></script>
+</body>
+
+</html>
