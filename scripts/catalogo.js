@@ -141,10 +141,6 @@ function render() {
     );
   }
 
-  if (typeof window.pararCarrosseis === "function") {
-    window.pararCarrosseis(grid);
-  }
-
   if (lista.length && typeof window.productCard === "function") {
     grid.innerHTML = lista
       .map(produto => window.productCard(produto))
@@ -162,10 +158,6 @@ function render() {
   }
 
   count.textContent = `${lista.length} produto(s)`;
-
-  if (typeof window.iniciarCarrosseis === "function") {
-    window.iniciarCarrosseis(grid);
-  }
 }
 
 function preencherFiltro(elemento, valores) {
