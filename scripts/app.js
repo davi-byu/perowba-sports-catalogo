@@ -79,7 +79,7 @@ function productCard(p){
         <button class="btn btn-primary product-open-details" type="button" data-product-id="${escapeAttribute(p.id)}">Ver produto</button>
         <button class="icon-btn product-add-cart" type="button" data-product="${encodeURIComponent(produtoSeguro)}" aria-label="Adicionar ao carrinho">🛒</button>
       </div>
-      <a class="btn btn-whatsapp" href="${whatsappUrl(mensagem)}" target="_blank" rel="noopener noreferrer">WhatsApp — consultar produto</a>
+      <a class="btn btn-whatsapp" href="${whatsappUrl(mensagem)}" target="_blank" rel="noopener noreferrer">Pedir no — WhatsApp</a>
     </div>
   </article>`;
 }
