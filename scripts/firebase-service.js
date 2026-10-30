@@ -16,20 +16,36 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+// Auth e Storage passam a ser carregados sob demanda (import dinâmico),
+// para as páginas públicas (catálogo, produto, carrinho) não baixarem
+// SDKs que não utilizam — reduz o tempo de bloqueio da página.
+let moduloAuth = null;
+let auth = null;
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
+async function carregarAuth() {
+  if (!moduloAuth) {
+    moduloAuth = await import(
+      "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js"
+    );
+    auth = moduloAuth.getAuth(app);
+  }
+
+  return moduloAuth;
+}
+
+let moduloStorage = null;
+let storage = null;
+
+async function carregarStorage() {
+  if (!moduloStorage) {
+    moduloStorage = await import(
+      "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js"
+    );
+    storage = moduloStorage.getStorage(app);
+  }
+
+  return moduloStorage;
+}
 
 const firebaseConfig = window.FIREBASE_CONFIG;
 
@@ -44,8 +60,6 @@ const app = getApps().length
   : initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
 
 function validarEmpresa(empresaId) {
   if (!empresaId || typeof empresaId !== "string") {
@@ -149,6 +163,64 @@ export async function excluirProduto(empresaId, produtoId) {
   await deleteDoc(doc(produtosRef(empresaId), produtoId));
 }
 
+// Converte imagens JPG/PNG para WebP no navegador antes do envio,
+// reduzindo o tamanho dos arquivos e acelerando o carregamento do site.
+const FORMATOS_CONVERTER_WEBP = ["image/jpeg", "image/png"];
+const QUALIDADE_WEBP = 0.82;
+
+async function converterParaWebp(arquivo) {
+  if (
+    !FORMATOS_CONVERTER_WEBP.includes(arquivo.type) ||
+    typeof createImageBitmap !== "function"
+  ) {
+    return arquivo;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(arquivo, {
+      imageOrientation: "from-image"
+    });
+
+    let convertido = null;
+
+    if (typeof OffscreenCanvas === "function") {
+      const tela = new OffscreenCanvas(bitmap.width, bitmap.height);
+      tela.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      convertido = await tela.convertToBlob({
+        type: "image/webp",
+        quality: QUALIDADE_WEBP
+      });
+    } else if (typeof document !== "undefined") {
+      const tela = document.createElement("canvas");
+      tela.width = bitmap.width;
+      tela.height = bitmap.height;
+      tela.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      convertido = await new Promise(resolucao =>
+        tela.toBlob(resolucao, "image/webp", QUALIDADE_WEBP)
+      );
+    } else {
+      bitmap.close();
+      return arquivo;
+    }
+
+    if (!convertido || convertido.size <= 0) {
+      return arquivo;
+    }
+
+    const nomeWebp = arquivo.name.replace(/\.[^.]+$/, "") + ".webp";
+
+    return new File([convertido], nomeWebp, { type: "image/webp" });
+  } catch (erro) {
+    console.warn(
+      "Não foi possível converter para WebP; enviando o arquivo original.",
+      erro
+    );
+    return arquivo;
+  }
+}
+
 export async function enviarImagemProduto(
   arquivo,
   empresaId = "perowba-sports"
@@ -165,7 +237,9 @@ export async function enviarImagemProduto(
     throw new Error("Cada imagem deve ter menos de 5 MB.");
   }
 
-  const nomeSeguro = arquivo.name
+  const arquivoFinal = await converterParaWebp(arquivo);
+
+  const nomeSeguro = arquivoFinal.name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9._-]/g, "-");
@@ -174,10 +248,12 @@ export async function enviarImagemProduto(
     `produtos/${validarEmpresa(empresaId)}/` +
     `${Date.now()}-${crypto.randomUUID()}-${nomeSeguro}`;
 
+  const { ref, uploadBytes, getDownloadURL } = await carregarStorage();
+
   const referencia = ref(storage, caminho);
 
-  await uploadBytes(referencia, arquivo, {
-    contentType: arquivo.type
+  await uploadBytes(referencia, arquivoFinal, {
+    contentType: arquivoFinal.type
   });
 
   const url = await getDownloadURL(referencia);
@@ -192,6 +268,8 @@ export async function excluirImagemProduto(caminho) {
   if (!caminho || typeof caminho !== "string") {
     return;
   }
+
+  const { ref, deleteObject } = await carregarStorage();
 
   await deleteObject(ref(storage, caminho));
 }
@@ -249,6 +327,8 @@ export async function registrarPedido(empresaId, pedido) {
 }
 
 export async function entrarAdmin(email, senha) {
+  const { signInWithEmailAndPassword } = await carregarAuth();
+
   const resultado = await signInWithEmailAndPassword(
     auth,
     email,
@@ -259,9 +339,13 @@ export async function entrarAdmin(email, senha) {
 }
 
 export async function sairAdmin() {
+  const { signOut } = await carregarAuth();
+
   await signOut(auth);
 }
 
-export function observarAutenticacao(callback) {
+export async function observarAutenticacao(callback) {
+  const { onAuthStateChanged } = await carregarAuth();
+
   return onAuthStateChanged(auth, callback);
 }

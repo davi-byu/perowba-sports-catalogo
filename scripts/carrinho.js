@@ -9,7 +9,7 @@ function renderCart(){
   list.innerHTML=cart.map(i=>{
     const sub=i.preco*i.quantidade; total+=sub;
     return `<div class="cart-item">
-      <img src="${i.imagem}" alt="${i.nome}">
+      <img src="${i.imagem}" alt="${i.nome}" loading="lazy">
       <div><h3>${i.nome}</h3><small>${i.tamanho?`Tamanho: ${i.tamanho} • `:""}${i.cor?`Cor: ${i.cor}`:""}</small>
         <div class="cart-controls"><button onclick="changeQty('${i.key}',-1)">−</button><b>${i.quantidade}</b><button onclick="changeQty('${i.key}',1)">+</button><button class="btn-danger" onclick="removeFromCart('${i.key}')">Remover</button></div>
       </div>

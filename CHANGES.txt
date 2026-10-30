@@ -1,0 +1,104 @@
+================================================================
+ PEROWBA SPORTS - MELHORIAS DE VELOCIDADE
+ Data: 30/10/2026
+================================================================
+
+O que foi feito (apenas adições, nada mais foi modificado):
+
+1. CONVERSÃO AUTOMÁTICA PARA WEBP NO UPLOAD
+   Arquivo: scripts/firebase-service.js
+   - Adicionada a função converterParaWebp() antes de enviarImagemProduto().
+   - Toda imagem JPG ou PNG enviada pelo painel admin agora é convertida
+     para WebP (qualidade 82) no próprio navegador, ANTES de ir para o
+     Firebase Storage. O arquivo salvo já nasce .webp.
+   - Segurança incluída: se a conversão falhar por qualquer motivo, o
+     arquivo original é enviado normalmente (nada é perdido).
+   - GIFs, SVGs e WebPs seguem enviados como estão.
+
+2. CARREGAMENTO LENTO (LAZY LOADING)
+   Arquivo: scripts/catalogo.js
+   - Imagem principal do modal de produto agora tem loading="lazy"
+     (as miniaturas do modal já tinham).
+   Arquivo: scripts/carrinho.js
+   - Imagens dos itens do carrinho agora têm loading="lazy".
+
+JÁ EXISTIAM (nada foi alterado):
+   - app.js linha 71: cartões do catálogo já tinham loading="lazy".
+   - produto.js: página de produto já usava fetchpriority="high" na foto
+     principal (correto para o LCP) e loading="lazy" nas miniaturas.
+
+ARQUIVOS MODIFICADOS (somente estes 3):
+   - scripts/firebase-service.js  (+62 linhas, 2 linhas ajustadas)
+   - scripts/catalogo.js          (+1 linha)
+   - scripts/carrinho.js          (1 linha ajustada)
+
+COMO REVERTER (se necessário):
+   - firebase-service.js: remova o bloco entre o comentário
+     "// Converte imagens JPG/PNG para WebP..." e a linha
+     "export async function enviarImagemProduto(", e reverta:
+       const nomeSeguro = arquivoFinal.name  ->  arquivo.name
+       uploadBytes(referencia, arquivoFinal, { contentType: arquivoFinal.type })
+         ->  uploadBytes(referencia, arquivo, { contentType: arquivo.type })
+   - catalogo.js: remova loading="lazy" da imagem "modal-main-image".
+   - carrinho.js: remova loading="lazy" do img do cart-item.
+
+OBSERVAÇÕES:
+   - As imagens JÁ enviadas ao Firebase continuam no formato original.
+     As novas convertidas terão o mesmo nome com extensão .webp.
+   - Compatibilidade: a conversão usa recursos nativos do navegador
+     (createImageBitmap + OffscreenCanvas/canvas), disponíveis em todos
+     os navegadores modernos. Nenhuma dependência nova foi adicionada.
+================================================================
+
+================================================================
+ RODADA 2 (30/10/2026) - CORREÇÕES APONTADAS PELO LIGHTHOUSE
+================================================================
+
+Lighthouse mostrou: Desempenho 60 | LCP 3,1s | TBT 3.350ms
+Auditorias: logo-perowba.jpg 1600x1600 exibida a 50px (262,9 KiB
+economia estimada) e SDKs do Firebase (Auth + Storage) carregados
+em todas as páginas no caminho crítico.
+
+3. LOGO OTIMIZADO (eram 263 KiB)
+   - Criado imagens/logo-perowba.webp (640x640, 68 KiB) para o hero
+   - Criado imagens/logo-perowba-96.webp (96x96, 4 KiB) para o
+     cabeçalho (54px) e favicon
+   - Atualizadas as referências em TODOS os HTML:
+     index.html (hero usa logo-perowba.webp; cabeçalho e favicon usam
+     o 96), catalogo.html, produto.html, carrinho.html, contato.html
+     e admin.html (cabeçalho e favicon usam o 96)
+   - O arquivo original imagens/logo-perowba.jpg foi mantido no zip
+     (backup); pode ser removido depois de confirmar que nada usa.
+
+4. FIREBASE AUTH E STORAGE SOB DEMANDA
+   Arquivo: scripts/firebase-service.js
+   - Removidos os imports estáticos de firebase-auth.js e
+     firebase-storage.js (juntos ~57 KiB que o catálogo baixava sem
+     usar, bloqueando a página principal e encadeando o
+     firebase-firestore no caminho crítico).
+   - Criados carregarAuth() e carregarStorage() com import dinâmico:
+     o SDK só é baixado na primeira função que precisar dele.
+   - entrarAdmin, sairAdmin, observarAutenticacao, enviarImagemProduto
+     e excluirImagemProduto passaram a ser async internamente —
+     as assinaturas externas continuam as mesmas (já eram async ou
+     promessas), nenhum outro arquivo precisou mudar.
+   - Nenhuma página pública (catálogo, produto, carrinho, contato,
+     index) baixa mais Auth/Storage. O painel admin continua
+     funcionando igual: o Auth é carregado ao entrar na página.
+
+COMO REVERTER (rodada 2):
+   - Nos HTML: trocar de volta as referências para
+     imagens/logo-perowba.jpg.
+   - Em firebase-service.js: restaurar os imports estáticos de
+     firebase-auth.js/firebase-storage.js, recriar
+     "export const auth = getAuth(app)" e
+     "export const storage = getStorage(app)" e remover
+     carregarAuth()/carregarStorage() e os awaits inseridos.
+
+OBSERVAÇÃO IMPORTANTE SOBRE O TESTE:
+   - Se após substituir os arquivos o Lighthouse continuar mostrando
+     o logo de 263 KiB, o navegador está usando CACHE. Faça:
+     hard refresh (Ctrl+Shift+R) ou DevTools > botão direito no
+     botão recarregar > "Esvaziar cache e recarregar novamente",
+     e rode o Lighthouse na aba anônima.
+================================================================
