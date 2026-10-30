@@ -149,6 +149,64 @@ export async function excluirProduto(empresaId, produtoId) {
   await deleteDoc(doc(produtosRef(empresaId), produtoId));
 }
 
+// Converte imagens JPG/PNG para WebP no navegador antes do envio,
+// reduzindo o tamanho dos arquivos e acelerando o carregamento do site.
+const FORMATOS_CONVERTER_WEBP = ["image/jpeg", "image/png"];
+const QUALIDADE_WEBP = 0.82;
+
+async function converterParaWebp(arquivo) {
+  if (
+    !FORMATOS_CONVERTER_WEBP.includes(arquivo.type) ||
+    typeof createImageBitmap !== "function"
+  ) {
+    return arquivo;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(arquivo, {
+      imageOrientation: "from-image"
+    });
+
+    let convertido = null;
+
+    if (typeof OffscreenCanvas === "function") {
+      const tela = new OffscreenCanvas(bitmap.width, bitmap.height);
+      tela.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      convertido = await tela.convertToBlob({
+        type: "image/webp",
+        quality: QUALIDADE_WEBP
+      });
+    } else if (typeof document !== "undefined") {
+      const tela = document.createElement("canvas");
+      tela.width = bitmap.width;
+      tela.height = bitmap.height;
+      tela.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      convertido = await new Promise(resolucao =>
+        tela.toBlob(resolucao, "image/webp", QUALIDADE_WEBP)
+      );
+    } else {
+      bitmap.close();
+      return arquivo;
+    }
+
+    if (!convertido || convertido.size <= 0) {
+      return arquivo;
+    }
+
+    const nomeWebp = arquivo.name.replace(/\.[^.]+$/, "") + ".webp";
+
+    return new File([convertido], nomeWebp, { type: "image/webp" });
+  } catch (erro) {
+    console.warn(
+      "Não foi possível converter para WebP; enviando o arquivo original.",
+      erro
+    );
+    return arquivo;
+  }
+}
+
 export async function enviarImagemProduto(
   arquivo,
   empresaId = "perowba-sports"
@@ -165,7 +223,9 @@ export async function enviarImagemProduto(
     throw new Error("Cada imagem deve ter menos de 5 MB.");
   }
 
-  const nomeSeguro = arquivo.name
+  const arquivoFinal = await converterParaWebp(arquivo);
+
+  const nomeSeguro = arquivoFinal.name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9._-]/g, "-");
@@ -176,8 +236,8 @@ export async function enviarImagemProduto(
 
   const referencia = ref(storage, caminho);
 
-  await uploadBytes(referencia, arquivo, {
-    contentType: arquivo.type
+  await uploadBytes(referencia, arquivoFinal, {
+    contentType: arquivoFinal.type
   });
 
   const url = await getDownloadURL(referencia);

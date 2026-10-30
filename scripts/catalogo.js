@@ -361,6 +361,7 @@ function abrirModal(produto) {
                   id="modal-main-image"
                   src="${escapar(primeiraFoto)}"
                   alt="${escapar(produto.nome)}"
+                  loading="lazy"
                 >
               `
               : `
