@@ -181,15 +181,6 @@ function adicionarVariacao(dados = {}) {
     </div>
 
     <div class="field">
-      <label>Cor</label>
-      <input
-        class="v-cor"
-        value="${escaparHTML(dados.cor || "")}"
-        placeholder="Ex.: Preto"
-        required>
-    </div>
-
-    <div class="field">
       <label>Preço (R$)</label>
       <input
         class="v-preco"
@@ -226,7 +217,6 @@ function adicionarVariacao(dados = {}) {
 function lerVariacoes() {
   return [...document.querySelectorAll(".variation-row")].map(linha => ({
     tamanho: linha.querySelector(".v-tamanho").value.trim(),
-    cor: linha.querySelector(".v-cor").value.trim(),
     preco: Number(linha.querySelector(".v-preco").value),
     estoque: Number(linha.querySelector(".v-estoque").value)
   }));
@@ -386,6 +376,8 @@ function editarProduto(id) {
   $("p-nome").value = produto.nome || "";
   $("p-categoria").value = produto.categoria || "";
   $("p-marca").value = produto.marca || "";
+  $("p-sku").value = produto.sku || "";
+  $("p-cor").value = produto.cor || produto.cores?.[0] || produto.variacoes?.[0]?.cor || "";
   $("p-condicao").value = produto.condicao || "novo";
   $("p-descricao").value = produto.descricao || "";
   $("p-preco").value = produto.preco ?? "";
@@ -406,11 +398,14 @@ function editarProduto(id) {
   $("variations-list").replaceChildren();
 
   if (Array.isArray(produto.variacoes) && produto.variacoes.length) {
-    produto.variacoes.forEach(adicionarVariacao);
+    produto.variacoes.forEach(variacao => adicionarVariacao({
+      tamanho: variacao.tamanho,
+      preco: variacao.preco,
+      estoque: variacao.estoque
+    }));
   } else {
     adicionarVariacao({
       tamanho: produto.tamanhos?.[0] || "Único",
-      cor: produto.cores?.[0] || "Preto",
       preco: produto.preco,
       estoque: produto.estoque || 0
     });
@@ -498,13 +493,41 @@ async function handleSubmit(evento) {
   const variacoes = lerVariacoes();
 
   if (!variacoes.length) {
-    mostrarMensagem("Adicione pelo menos uma variação.");
+    mostrarMensagem("Adicione pelo menos um tamanho.");
+    return;
+  }
+
+  const sku = $("p-sku").value.trim().toUpperCase();
+  const cor = $("p-cor").value.trim();
+
+  if (!sku || !cor) {
+    mostrarMensagem("Informe o SKU e a cor do produto.");
+    return;
+  }
+
+  const skuDuplicado = produtos.some(item =>
+    String(item.sku || "").trim().toUpperCase() === sku &&
+    item.id !== produtoEmEdicao
+  );
+
+  if (skuDuplicado) {
+    mostrarMensagem("Já existe outro produto com esse SKU no Perowba Sports.");
+    return;
+  }
+
+  const tamanhosRepetidos = variacoes.some((item, indice) =>
+    variacoes.findIndex(outro =>
+      outro.tamanho.toLocaleLowerCase("pt-BR") === item.tamanho.toLocaleLowerCase("pt-BR")
+    ) !== indice
+  );
+
+  if (tamanhosRepetidos) {
+    mostrarMensagem("Não repita tamanhos. Cada tamanho deve ter uma única quantidade de estoque.");
     return;
   }
 
   const variacaoInvalida = variacoes.some(variacao =>
     !variacao.tamanho ||
-    !variacao.cor ||
     !Number.isFinite(variacao.preco) ||
     variacao.preco < 0 ||
     !Number.isInteger(variacao.estoque) ||
@@ -512,7 +535,7 @@ async function handleSubmit(evento) {
   );
 
   if (variacaoInvalida) {
-    mostrarMensagem("Confira os tamanhos, cores, preços e estoques.");
+    mostrarMensagem("Confira os tamanhos, preços e estoques.");
     return;
   }
 
@@ -540,12 +563,14 @@ async function handleSubmit(evento) {
       nome: $("p-nome").value.trim(),
       categoria: $("p-categoria").value.trim(),
       marca: $("p-marca").value.trim(),
+      sku,
+      cor,
       condicao: $("p-condicao").value,
       descricao: $("p-descricao").value.trim(),
       preco: precoBase,
       variacoes,
       tamanhos: [...new Set(variacoes.map(item => item.tamanho))],
-      cores: [...new Set(variacoes.map(item => item.cor))],
+      cores: [cor],
       estoque: variacoes.reduce((total, item) => total + item.estoque, 0),
       destaque: $("p-destaque").checked,
       ativo: true,
@@ -680,6 +705,42 @@ async function processarSaida() {
   }
 }
 
+
+function exportarProdutosParaMigracao() {
+  if (!usuarioAutenticado || usuarioAutenticado.uid !== ADMIN_UID) {
+    mostrarMensagem("Somente a conta administrativa pode exportar os produtos.");
+    return;
+  }
+
+  if (!produtos.length) {
+    mostrarMensagem("Não há produtos carregados para exportar.");
+    return;
+  }
+
+  const arquivo = {
+    exportadoEm: new Date().toISOString(),
+    projeto: "perowba-sports",
+    empresaId: EMPRESA_ID,
+    quantidadeProdutos: produtos.length,
+    produtos
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(arquivo, null, 2)],
+    { type: "application/json;charset=utf-8" }
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `perowba-sports-produtos-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  mostrarMensagem("Backup JSON exportado. Guarde o arquivo antes da migração.");
+}
+
 function acompanharAutenticacao() {
   if (observadorIniciado) return;
 
@@ -730,6 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("product-form").addEventListener("submit", handleSubmit);
 
   $("admin-table").addEventListener("click", processarAcaoTabela);
+  $("export-products").addEventListener("click", exportarProdutosParaMigracao);
 
   $("reset-admin").addEventListener("click", () => {
     mostrarMensagem(

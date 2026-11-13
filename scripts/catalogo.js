@@ -420,7 +420,8 @@ function abrirModal(produto) {
         ${
           variacoes.length
             ? `
-              <h3 class="option-title">Escolha tamanho e cor</h3>
+              <h3 class="option-title">Escolha o tamanho</h3>
+              <p><strong>Cor:</strong> ${escapar(produto.cor || produto.cores?.[0] || variacoes[0]?.cor || "Padrão")}</p>
 
               <div class="modal-variations">
                 ${variacoes.map((variacao, indice) => `
@@ -437,7 +438,6 @@ function abrirModal(produto) {
                     }
                   >
                     ${escapar(variacao.tamanho || "Único")}
-                    · ${escapar(variacao.cor || "Padrão")}
                     — ${formatarPreco(
                       variacao.preco ?? produto.preco
                     )}
@@ -590,7 +590,7 @@ function adicionarProdutoModal() {
     produtoParaCarrinho,
     quantidade,
     String(variacao?.tamanho || ""),
-    String(variacao?.cor || "")
+    String(produtoModalAtual?.cor || produtoModalAtual?.cores?.[0] || variacao?.cor || "")
   );
 
   fecharModal();

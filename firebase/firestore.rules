@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function administrador() {
+      return request.auth != null
+        && request.auth.uid == 'bSJntb0JQhSTFluXm46sI9SMrhT2';
+    }
+
+    // O catálogo é público, mas somente o administrador pode cadastrar.
+    // Produtos sincronizados pelo Gestão só podem ter campos editoriais
+    // alterados pelo painel do Sports; SKU, preço, cor e estoque ficam protegidos.
+    match /empresas/{empresaId}/produtos/{produtoId} {
+      allow read: if empresaId == 'perowba-sports';
+
+      allow create: if empresaId == 'perowba-sports'
+        && administrador();
+
+      allow update: if empresaId == 'perowba-sports'
+        && administrador()
+        && (
+          !resource.data.keys().hasAny(['origemGestao'])
+          || resource.data.origemGestao == null
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'imagens',
+            'imagem',
+            'imagemCaminho',
+            'descricao',
+            'condicao',
+            'destaque',
+            'cores',
+            'atualizadoEm',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if empresaId == 'perowba-sports'
+        && administrador()
+        && (
+          !resource.data.keys().hasAny(['origemGestao'])
+          || resource.data.origemGestao == null
+        );
+    }
+
+    // Acesso administrativo a pedidos e movimentações, caso sejam usados
+    // nestes caminhos dentro da empresa.
+    match /empresas/{empresaId}/pedidos/{pedidoId} {
+      allow read, create, update, delete: if empresaId == 'perowba-sports'
+        && administrador();
+    }
+
+    match /empresas/{empresaId}/movimentacoesEstoque/{movimentacaoId} {
+      allow read, create, update, delete: if empresaId == 'perowba-sports'
+        && administrador();
+    }
+
+    // Acesso ao documento da empresa apenas pelo administrador.
+    match /empresas/{empresaId} {
+      allow read, write: if empresaId == 'perowba-sports'
+        && administrador();
+    }
+
+    // Mantém compatibilidade com coleções legadas que aparecem nas regras
+    // atuais do projeto (raiz do banco), sem abrir escrita pública.
+    match /produtos/{produtoId} {
+      allow read: if true;
+      allow create, update, delete: if administrador();
+    }
+
+    match /pedidos/{pedidoId} {
+      allow read, create, update, delete: if administrador();
+    }
+
+    match /movimentacoesEstoque/{movimentacaoId} {
+      allow read, write: if administrador();
+    }
+
+    // Bloqueio padrão para qualquer outro caminho.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

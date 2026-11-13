@@ -29,3 +29,14 @@ Catálogo responsivo de material esportivo com:
 - `estilos/` — CSS
 - `scripts/` — JavaScript
 - `imagens/` — logo e imagens dos produtos
+
+
+## Padrão de cadastro e integração de estoque
+
+- Cada produto possui um único SKU e uma única cor.
+- As variações do produto são somente tamanhos, cada um com seu próprio estoque.
+- Para cadastrar outra cor do mesmo modelo, crie outro produto com SKU diferente.
+- O vínculo com o Perowba Gestão utiliza o SKU do produto combinado com o tamanho da variação.
+- SKUs devem ser únicos dentro do catálogo.
+
+Produtos antigos que possuíam várias cores dentro do mesmo cadastro precisam ser separados em produtos distintos antes de ativar a sincronização. Não faça essa conversão automaticamente sem conferir e distribuir os estoques de cada cor.

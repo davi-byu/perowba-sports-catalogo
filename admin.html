@@ -230,6 +230,18 @@
             </div>
 
             <div class="field">
+              <label for="p-sku">SKU do produto</label>
+              <input id="p-sku" required maxlength="60" placeholder="Ex.: NIKE-CAMPO-001">
+              <small>Use o mesmo SKU cadastrado no Perowba Gestão.</small>
+            </div>
+
+            <div class="field">
+              <label for="p-cor">Cor do produto</label>
+              <input id="p-cor" required maxlength="40" placeholder="Ex.: Preto">
+              <small>Cada produto terá uma única cor. Para outra cor, cadastre outro produto e outro SKU.</small>
+            </div>
+
+            <div class="field">
               <label for="p-condicao">Condição</label>
               <select id="p-condicao" required>
                 <option value="novo">Novo</option>
@@ -258,7 +270,7 @@
 
             <div class="field">
               <label>Variações do produto</label>
-              <p>Cadastre cada combinação de tamanho, cor, preço e estoque.</p>
+              <p>Cadastre somente os tamanhos e seus respectivos preços e estoques. A cor é definida no produto.</p>
               <div id="variations-list"></div>
 
               <button type="button" class="btn" id="add-variation">
@@ -291,6 +303,10 @@
 
         <section class="admin-box">
           <h2>Produtos cadastrados</h2>
+          <p>Antes da migração de cores, exporte uma cópia dos produtos atuais para conferirmos os SKUs, tamanhos e estoques.</p>
+          <button type="button" class="btn" id="export-products">
+            Exportar produtos para migração (JSON)
+          </button>
 
           <div style="overflow:auto">
             <table class="admin-table">

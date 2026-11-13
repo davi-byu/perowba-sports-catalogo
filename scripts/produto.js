@@ -81,7 +81,6 @@ function renderizarProduto(produto) {
   const variacoes = Array.isArray(produto.variacoes)
     ? produto.variacoes.map(variacao => ({
         tamanho: String(variacao.tamanho ?? "Único"),
-        cor: String(variacao.cor ?? "Padrão"),
         preco: Number(variacao.preco ?? produto.preco ?? 0),
         estoque: Math.max(0, Number(variacao.estoque ?? 0))
       }))
@@ -93,16 +92,14 @@ function renderizarProduto(produto) {
         ? produto.tamanhos
         : ["Único"]).map(String);
 
-  const cores = variacoes.length
-    ? [...new Set(variacoes.map(v => v.cor))]
-    : (Array.isArray(produto.cores) && produto.cores.length
-        ? produto.cores
-        : ["Padrão"]).map(String);
+  // Compatibilidade: produtos antigos podem guardar a cor nas variações.
+  const cor = String(
+    produto.cor || produto.cores?.[0] || produto.variacoes?.[0]?.cor || "Padrão"
+  );
 
   const fotos = obterFotos(produto);
 
   let tamanho = tamanhos[0] || "Único";
-  let cor = cores[0] || "Padrão";
   let quantidade = 1;
   let variacaoAtual = null;
 
@@ -185,16 +182,7 @@ function renderizarProduto(produto) {
           `).join("")}
         </div>
 
-        <div class="option-title">Cor</div>
-        <div class="options" id="colors">
-          ${cores.map(valor => `
-            <button
-              type="button"
-              class="option ${valor === cor ? "selected" : ""}"
-              data-v="${escaparHTML(valor)}"
-            >${escaparHTML(valor)}</button>
-          `).join("")}
-        </div>
+        <p class="product-color"><strong>Cor:</strong> ${escaparHTML(cor)}</p>
 
         <div class="quantity">
           <button type="button" id="minus" aria-label="Diminuir quantidade">−</button>
@@ -257,9 +245,7 @@ function renderizarProduto(produto) {
   function encontrarVariacao() {
     if (!variacoes.length) return null;
 
-    return variacoes.find(v =>
-      v.tamanho === tamanho && v.cor === cor
-    ) || null;
+    return variacoes.find(v => v.tamanho === tamanho) || null;
   }
 
   function obterEstoqueAtual() {
@@ -308,7 +294,7 @@ function renderizarProduto(produto) {
 
     if (combinacaoInvalida) {
       mensagemElemento.textContent =
-        "Esta combinação de tamanho e cor não está cadastrada.";
+        "Este tamanho não está cadastrado.";
     } else if (estoque <= 0) {
       mensagemElemento.textContent = "Esta variação está esgotada.";
     } else {
@@ -317,25 +303,13 @@ function renderizarProduto(produto) {
 
     root.querySelectorAll("#sizes .option").forEach(botao => {
       const disponivel = !variacoes.length || variacoes.some(v =>
-        v.tamanho === botao.dataset.v &&
-        v.cor === cor &&
-        v.estoque > 0
+        v.tamanho === botao.dataset.v && v.estoque > 0
       );
 
       botao.disabled = variacoes.length > 0 && !disponivel;
       botao.classList.toggle("selected", botao.dataset.v === tamanho);
     });
 
-    root.querySelectorAll("#colors .option").forEach(botao => {
-      const disponivel = !variacoes.length || variacoes.some(v =>
-        v.cor === botao.dataset.v &&
-        v.tamanho === tamanho &&
-        v.estoque > 0
-      );
-
-      botao.disabled = variacoes.length > 0 && !disponivel;
-      botao.classList.toggle("selected", botao.dataset.v === cor);
-    });
   }
 
   root.querySelectorAll("#sizes .option").forEach(botao => {
@@ -347,14 +321,6 @@ function renderizarProduto(produto) {
     });
   });
 
-  root.querySelectorAll("#colors .option").forEach(botao => {
-    botao.addEventListener("click", () => {
-      if (botao.disabled) return;
-      cor = botao.dataset.v;
-      quantidade = 1;
-      atualizarVariacao();
-    });
-  });
 
   document.getElementById("minus").addEventListener("click", () => {
     quantidade = Math.max(1, quantidade - 1);

@@ -142,12 +142,26 @@ export async function salvarProduto(
   delete dados.id;
 
   if (produtoId) {
-    await setDoc(
-      doc(produtosRef(empresaId), produtoId),
-      dados,
-      { merge: true }
-    );
+    const referencia = doc(produtosRef(empresaId), produtoId);
+    const atual = await getDoc(referencia);
+    const dadosAtuais = atual.exists() ? atual.data() : {};
 
+    // Produtos vinculados ao Gestão recebem cadastro e estoque do sistema central.
+    // O administrador do catálogo continua podendo editar fotos e descrição,
+    // mas não sobrescreve SKU, preço, cor, tamanhos ou quantidades sincronizadas.
+    if (dadosAtuais.origemGestao?.companyId && dadosAtuais.origemGestao?.productId) {
+      for (const campo of [
+        "nome", "sku", "cor", "marca", "categoria", "preco",
+        "variacoes", "tamanhos", "estoque", "ativo", "origemGestao",
+        "sincronizacaoAtiva", "sincronizadoEm"
+      ]) {
+        if (Object.prototype.hasOwnProperty.call(dadosAtuais, campo)) {
+          dados[campo] = dadosAtuais[campo];
+        }
+      }
+    }
+
+    await setDoc(referencia, dados, { merge: true });
     return produtoId;
   }
 
@@ -160,7 +174,15 @@ export async function salvarProduto(
 }
 
 export async function excluirProduto(empresaId, produtoId) {
-  await deleteDoc(doc(produtosRef(empresaId), produtoId));
+  const referencia = doc(produtosRef(empresaId), produtoId);
+  const atual = await getDoc(referencia);
+  if (atual.exists()) {
+    const dados = atual.data();
+    if (dados.origemGestao?.companyId && dados.origemGestao?.productId) {
+      throw new Error("Este produto é gerenciado pelo Perowba Gestão. Desative a publicação no Gestão para removê-lo do catálogo.");
+    }
+  }
+  await deleteDoc(referencia);
 }
 
 // Converte imagens JPG/PNG para WebP no navegador antes do envio,
@@ -287,13 +309,19 @@ export async function atualizarEstoque(
     );
   }
 
-  await updateDoc(
-    doc(produtosRef(empresaId), produtoId),
-    {
-      estoque: quantidade,
-      atualizadoEm: serverTimestamp()
+  const referencia = doc(produtosRef(empresaId), produtoId);
+  const atual = await getDoc(referencia);
+  if (atual.exists()) {
+    const dados = atual.data();
+    if (dados.origemGestao?.companyId && dados.origemGestao?.productId) {
+      throw new Error("O estoque deste produto é controlado pelo Perowba Gestão.");
     }
-  );
+  }
+
+  await updateDoc(referencia, {
+    estoque: quantidade,
+    atualizadoEm: serverTimestamp()
+  });
 }
 
 export async function listarPedidos(empresaId) {
