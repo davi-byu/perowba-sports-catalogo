@@ -633,3 +633,54 @@ body.modal-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .product-carousel .product-carousel-open img { transition: none; }
 }
+
+.product-card-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+}
+
+.sizes-label {
+  width: 100%;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.size-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 5px 8px;
+  border: 1px solid #ff6b00;
+  border-radius: 5px;
+  color: #222;
+  background: #fff7f0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.page-head-banner {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55)),
+    url("../imagens/banner-joao-pessoa.png") center 55% / cover no-repeat;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+.page-head-banner h1,
+.page-head-banner p {
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .page-head-banner {
+    min-height: 220px;
+    background-position: center;
+  }
+}

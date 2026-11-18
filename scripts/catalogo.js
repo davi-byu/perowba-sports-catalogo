@@ -424,7 +424,7 @@ function abrirModal(produto) {
               <p><strong>Cor:</strong> ${escapar(produto.cor || produto.cores?.[0] || variacoes[0]?.cor || "Padrão")}</p>
 
               <div class="modal-variations">
-                ${variacoes.map((variacao, indice) => `
+                ${variacoes.filter(variacao => Number(variacao.estoque) > 0).map((variacao, indice) => `
                   <button
                     type="button"
                     class="option ${

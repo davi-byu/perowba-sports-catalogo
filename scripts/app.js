@@ -63,6 +63,13 @@ function productCard(p){
   const estoque = Array.isArray(p.variacoes) && p.variacoes.length
     ? p.variacoes.reduce((total, v) => total + Number(v.estoque || 0), 0)
     : Number(p.estoque || 0);
+  const tamanhosDisponiveis = Array.isArray(p.variacoes)
+  ? [...new Set(
+      p.variacoes
+        .filter(v => Number(v.estoque) > 0)
+        .map(v => String(v.tamanho || "Único"))
+    )]
+  : [];
   const mensagem = `Olá! Tenho interesse neste produto da Perowba Sports:\n\nProduto: ${p.nome || ""}\nMarca: ${p.marca || ""}\nPreço: ${money(p.preco)}\n\nGostaria de confirmar a disponibilidade e as condições de entrega.`;
   const produtoSeguro = JSON.stringify(p).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/'/g, "&#39;");
   return `<article class="product-card">
@@ -75,6 +82,14 @@ function productCard(p){
       <button class="product-name product-open-details" type="button" data-product-id="${escapeAttribute(p.id)}">${escapeHTML(p.nome || 'Produto')}</button>
       <div><span class="price">${money(p.preco)}</span>${p.precoAntigo ? `<span class="old-price">${money(p.precoAntigo)}</span>` : ''}</div>
       <span class="stock">${formatStock(estoque)}</span>
+      ${tamanhosDisponiveis.length ? `
+  <div class="product-card-sizes">
+    <span class="sizes-label">Tamanhos disponíveis:</span>
+    ${tamanhosDisponiveis.map(tamanho =>
+      `<span class="size-tag">${escapeHTML(tamanho)}</span>`
+    ).join("")}
+  </div>
+` : ""}
       <div class="card-actions">
         <button class="btn btn-primary product-open-details" type="button" data-product-id="${escapeAttribute(p.id)}">Ver produto</button>
         <button class="icon-btn product-add-cart" type="button" data-product="${encodeURIComponent(produtoSeguro)}" aria-label="Adicionar ao carrinho">🛒</button>

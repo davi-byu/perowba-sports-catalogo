@@ -94,7 +94,7 @@ async function carregarProdutos() {
 
   tabela.innerHTML = `
     <tr>
-      <td colspan="5">Carregando produtos...</td>
+      <td colspan="6">Carregando produtos...</td>
     </tr>
   `;
 
@@ -106,7 +106,7 @@ async function carregarProdutos() {
 
     tabela.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="6">
           Não foi possível carregar os produtos.
         </td>
       </tr>
@@ -118,42 +118,55 @@ async function carregarProdutos() {
 
 function renderizarProdutos() {
   const tabela = $("admin-table");
+  const busca = String($("admin-search")?.value || "").trim().toLocaleLowerCase("pt-BR");
+  const filtrados = produtos.filter(produto => {
+    const termos = [produto.nome, produto.sku, produto.marca, produto.categoria, produto.cor]
+      .map(valor => String(valor || "").toLocaleLowerCase("pt-BR"));
+    return !busca || termos.some(valor => valor.includes(busca));
+  });
 
-  if (!produtos.length) {
+  const contador = $("admin-search-count");
+  if (contador) {
+    contador.textContent = busca
+      ? `${filtrados.length} de ${produtos.length} produto(s)`
+      : `${produtos.length} produto(s) cadastrado(s)`;
+  }
+
+  if (!filtrados.length) {
     tabela.innerHTML = `
       <tr>
-        <td colspan="5">Nenhum produto cadastrado.</td>
+        <td colspan="6">${produtos.length ? "Nenhum produto encontrado para essa busca." : "Nenhum produto cadastrado."}</td>
       </tr>
     `;
     return;
   }
 
-  tabela.innerHTML = produtos.map(produto => `
-    <tr>
-      <td>${escaparHTML(produto.nome)}</td>
-      <td>${escaparHTML(produto.categoria)}</td>
-      <td>${formatarPreco(produto.preco)}</td>
-      <td>${obterEstoque(produto)}</td>
-      <td>
-        <button
-          type="button"
-          class="btn"
-          data-action="edit"
-          data-id="${escaparHTML(produto.id)}">
-          Editar
-        </button>
+  tabela.innerHTML = filtrados.map(produto => {
+    const foto = produto.imagem || produto.imagens?.find(imagem => imagem?.principal)?.url || produto.imagens?.[0]?.url || "";
+    const celulaFoto = foto
+      ? `<img class="admin-product-thumb" src="${escaparHTML(foto)}" alt="${escaparHTML(produto.nome || "Foto do produto")}" loading="lazy" onerror="this.style.display='none'">`
+      : `<span class="admin-product-thumb-placeholder">Sem foto</span>`;
 
-        <button
-          type="button"
-          class="btn"
-          data-action="delete"
-          data-id="${escaparHTML(produto.id)}">
-          Excluir
-        </button>
-      </td>
-    </tr>
-  `).join("");
+    return `
+      <tr>
+        <td>${celulaFoto}</td>
+        <td>
+          <strong>${escaparHTML(produto.nome)}</strong>
+          <br><small>SKU: ${escaparHTML(produto.sku || "—")}</small>
+        </td>
+        <td>${escaparHTML(produto.categoria)}</td>
+        <td>${formatarPreco(produto.preco)}</td>
+        <td>${obterEstoque(produto)}</td>
+        <td>
+          <button type="button" class="btn" data-action="edit" data-id="${escaparHTML(produto.id)}">Editar</button>
+          <button type="button" class="btn" data-action="delete" data-id="${escaparHTML(produto.id)}">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
+
+$("admin-search")?.addEventListener("input", renderizarProdutos);
 
 function adicionarVariacao(dados = {}) {
   const lista = $("variations-list");
@@ -716,6 +729,11 @@ function exportarProdutosParaMigracao() {
     mostrarMensagem("Não há produtos carregados para exportar.");
     return;
   }
+
+  const confirmar = window.confirm(
+    `Você está prestes a baixar um backup com ${produtos.length} produto(s). Deseja continuar?`
+  );
+  if (!confirmar) return;
 
   const arquivo = {
     exportadoEm: new Date().toISOString(),

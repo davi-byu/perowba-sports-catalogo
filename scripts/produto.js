@@ -87,11 +87,16 @@ function renderizarProduto(produto) {
     : [];
 
   const tamanhos = variacoes.length
-    ? [...new Set(variacoes.map(v => v.tamanho))]
-    : (Array.isArray(produto.tamanhos) && produto.tamanhos.length
-        ? produto.tamanhos
-        : ["Único"]).map(String);
-
+  ? [...new Set(
+      variacoes
+        .filter(v => v.estoque > 0)
+        .map(v => v.tamanho)
+    )]
+  : (Array.isArray(produto.tamanhos) && produto.tamanhos.length
+      ? produto.tamanhos
+      : ["Único"]).map(String);
+  
+  
   // Compatibilidade: produtos antigos podem guardar a cor nas variações.
   const cor = String(
     produto.cor || produto.cores?.[0] || produto.variacoes?.[0]?.cor || "Padrão"
