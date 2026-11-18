@@ -684,3 +684,68 @@ body.modal-open { overflow: hidden; }
     background-position: center;
   }
 }
+
+/* Ajuste responsivo da barra de filtros do catálogo */
+.filters {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 16px;
+    gap: 12px;
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+}
+
+.filters .field {
+    min-width: 0;
+}
+
+.filters .field input,
+.filters .field select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+@media (max-width: 950px) {
+    .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filters .field:first-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .filters {
+        padding: 13px;
+        gap: 10px;
+        margin-top: -18px;
+        border-radius: 14px;
+    }
+
+    .filters .field:first-child,
+    .filters .field:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .filters .field label {
+        font-size: 12px;
+    }
+
+    .filters .field input,
+    .filters .field select {
+        height: 42px;
+        padding: 9px 10px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 360px) {
+    .filters {
+        padding: 10px;
+        gap: 8px;
+    }
+}
